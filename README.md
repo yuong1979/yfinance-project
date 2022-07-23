@@ -8,10 +8,17 @@
 
 `cd flask`
 
+**Start a the virtual environment**
+
+`python3 -m venv venv`
+
 **Run the virtual environment**
 
 `source venv/bin/activate`
 
+**Run the virtual environment**
+
+`pip install -r requirements.txt`
 
 ### Deploy on local without docker
 
