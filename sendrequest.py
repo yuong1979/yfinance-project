@@ -17,10 +17,9 @@
 # print (r.text)
 
 
+
 #actual post request function for using on google cloud
-
 import requests
-
 def send_post(request):
     payload = {"title": "testing now1"}
     #replace with url endpoint of cloudrun 
@@ -28,5 +27,6 @@ def send_post(request):
     r = requests.post(url+"/add", data=payload)
     print (r.status_code)
     return f'Post success'
+
 
 
