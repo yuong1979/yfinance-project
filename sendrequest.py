@@ -30,3 +30,12 @@ def send_post(request):
 
 
 
+import pytz
+import datetime as dt
+
+localtz=pytz.timezone('Asia/Singapore')
+now = dt.datetime.now()
+now=localtz.localize(now)
+print(now)
+
+
