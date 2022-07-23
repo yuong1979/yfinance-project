@@ -6,7 +6,7 @@
 
 **Change directory into the project**
 
-`cd flask`
+`cd flaskproj`
 
 **Start a the virtual environment**
 
