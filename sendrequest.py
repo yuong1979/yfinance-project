@@ -1,4 +1,4 @@
-import requests
+
 
 # #testing get request
 # payload = {"firstName": "John", "lastName": "Smith"}
@@ -18,9 +18,15 @@ import requests
 
 
 #actual post request function for using on google cloud
-payload = {"title": "testing now1"}
-url = "http://localhost:5000"
-r = requests.post(url+"/add", data=payload)
-print (r.status_code)
-# print (r.url)
-# print (r.text)
+
+import requests
+
+def send_post(request):
+    payload = {"title": "testing now1"}
+    #replace with url endpoint of cloudrun 
+    url = "http://localhost:5000"
+    r = requests.post(url+"/add", data=payload)
+    print (r.status_code)
+    return f'Post success'
+
+
