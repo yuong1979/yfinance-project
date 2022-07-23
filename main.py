@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
 
 
+
 app = Flask(__name__)
 
 
@@ -32,7 +33,6 @@ def home():
     todo_list = db.session.query(Todo).all()
     # return "Hello, Dude!"
     return render_template("base.html", todo_list=todo_list)
-
 
 # @app.route("/add", methods=["POST"])
 @app.post("/add")
@@ -67,6 +67,25 @@ if __name__ == "__main__":
 
 
 
+
+## For testing purposes only
+
+# @app.get("/gettest")
+# def gettest():
+#     return "get success"
+
+
+# @app.post("/posttest")
+# def posttest():
+#     title1 = request.form.get("firstName")
+#     title2 = request.form
+#     return request.form
+
+
+
+
+
+## Empty flask project
 
 # import os
 # from flask import Flask
