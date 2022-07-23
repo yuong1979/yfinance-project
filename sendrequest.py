@@ -17,9 +17,10 @@ import requests
 # print (r.text)
 
 
-#actual post request
+#actual post request function for using on google cloud
 payload = {"title": "testing now1"}
-r = requests.post("http://localhost:5000/add", data=payload)
+url = "http://localhost:5000"
+r = requests.post(url+"/add", data=payload)
 print (r.status_code)
 # print (r.url)
 # print (r.text)
