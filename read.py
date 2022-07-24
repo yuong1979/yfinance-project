@@ -29,8 +29,9 @@ try:
     print(values)
 
     # Updating values
-    aoa = [["1/1/2020",4000],["4/4/2021",9000],["1/5/2022",7000]]
-    aoa = [["donkey"]]
+    # aoa = [["1/1/2020",4000],["4/4/2021",9000],["1/5/2022",7000]]
+    # aoa = [["donkey"]]
+    aoa = [["1/1/2020","4/4/2021","4/4/2021","4/4/2021","4/4/2021"]]
 
     request = sheet.values().update(spreadsheetId=SAMPLE_SPREADSHEET_ID, 
         range="Sheet2!B2", valueInputOption="USER_ENTERED", body={"values":aoa})

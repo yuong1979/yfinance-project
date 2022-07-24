@@ -7,6 +7,8 @@ from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from google.oauth2 import service_account
 
+
+import json
 import yfinance as yf
 
 SERVICE_ACCOUNT_FILE = 'googlesheetsapi-keys.json'
@@ -53,7 +55,6 @@ try:
         else:
             kpilist.append(i[0])
     kpilist_in_list = [kpilist]
-    print (kpilist_in_list)
 
 except HttpError as err:
     print(err)
@@ -70,26 +71,28 @@ except HttpError as err:
 
 
 
-#update the data into the tracker
-try:
 
-    
+
+
+
+# update the info data into the tracker - this works but rate limit gets hit very easily need to optimize
+row = 2
+for i in Ticklist:
+    companyticker = yf.Ticker(i)
+    datalist = []
+    for j in kpilist:
+        companytickerwithKPI = companyticker.info[j]
+        datalist.append(companytickerwithKPI)
+
     request = sheet.values().update(spreadsheetId=REQUIRED_SPREADSHEET_ID, 
-        range="Tracker!B1", valueInputOption="USER_ENTERED", body={"values":kpilist_in_list})
+        range="Tracker!B"+str(row), valueInputOption="USER_ENTERED", body={"values":[datalist]})
     response = request.execute()
-
-except HttpError as err:
-    print(err)
+    row = row + 1
 
 
 
 
 
-# #Extracting the data and updating the spreadsheet
-# try:
-#     msft = yf.Ticker("msft")
-#     print (msft.info['industry'])
 
-# except HttpError as err:
-#     print(err)
+
 
