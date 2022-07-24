@@ -28,7 +28,7 @@ try:
     values = result.get('values', [])
     print(values)
 
-    # Updating valiues
+    # Updating values
     aoa = [["1/1/2020",4000],["4/4/2021",9000],["1/5/2022",7000]]
     aoa = [["donkey"]]
 
