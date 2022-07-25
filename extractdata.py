@@ -6,10 +6,12 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from google.oauth2 import service_account
-
-
+import gspread
 import json
 import yfinance as yf
+from datetime import datetime, timedelta
+
+
 
 SERVICE_ACCOUNT_FILE = 'googlesheetsapi-keys.json'
 
@@ -27,7 +29,7 @@ sheet = service.spreadsheets()
 
 #collecting the Tickers
 try:
-    range_names = ["Tracker!A2:A20"]
+    range_names = ["Ticker!A2:B20"]
     result = sheet.values().batchGet(
         spreadsheetId=REQUIRED_SPREADSHEET_ID, ranges=range_names).execute()
     Tickerranges = result.get('valueRanges', [])
@@ -35,7 +37,6 @@ try:
     Ticklist = []
     for [i] in Tickdata:
         Ticklist.append(i)
-    # print (Ticklist)
 
 except HttpError as err:
     print(err)
@@ -55,16 +56,7 @@ try:
         else:
             kpilist.append(i[0])
     kpilist_in_list = [kpilist]
-
-except HttpError as err:
-    print(err)
-
-
-#Inject the KPIS into the rows of the tracker
-try:
-    request = sheet.values().update(spreadsheetId=REQUIRED_SPREADSHEET_ID, 
-        range="Tracker!B1", valueInputOption="USER_ENTERED", body={"values":kpilist_in_list})
-    response = request.execute()
+    # print(kpilist_in_list)
 
 except HttpError as err:
     print(err)
@@ -74,8 +66,15 @@ except HttpError as err:
 
 
 
+#Inject the KPIS into the rows of the info
+request = sheet.values().update(spreadsheetId=REQUIRED_SPREADSHEET_ID, 
+    range="Info!C1", valueInputOption="USER_ENTERED", body={"values":[kpilist]}).execute()
+#Inject the tickers into the cols of the info
+request = sheet.values().update(spreadsheetId=REQUIRED_SPREADSHEET_ID, 
+    range="Info!A2", valueInputOption="USER_ENTERED", body={"values":Tickdata}).execute()
 
-# update the info data into the tracker - this works but rate limit gets hit very easily need to optimize
+
+# update the info data into the info sheet
 row = 2
 for i in Ticklist:
     companyticker = yf.Ticker(i)
@@ -84,9 +83,35 @@ for i in Ticklist:
         companytickerwithKPI = companyticker.info[j]
         datalist.append(companytickerwithKPI)
 
-    request = sheet.values().update(spreadsheetId=REQUIRED_SPREADSHEET_ID, 
-        range="Tracker!B"+str(row), valueInputOption="USER_ENTERED", body={"values":[datalist]})
-    response = request.execute()
+    #update the data
+    date_today = datetime.today().replace(microsecond=0)
+
+    result = sheet.values().get(spreadsheetId=REQUIRED_SPREADSHEET_ID,
+                                range="Info!B"+str(row)).execute()
+    date_time_str = result.get('values', [])
+
+    try:
+        date_time_str = date_time_str[0][0].strip('"')
+        recordeddatetime = datetime.strptime(date_time_str, '%Y-%m-%d %H:%M:%S')
+        dateexist = True
+    except:
+        dateexist = False
+
+    recordplusone = recordeddatetime + timedelta(minutes=5)
+
+    # if it was 5 minutes since the record was last extracted or if the date does not exist then extract again
+    if (date_today > recordplusone) or (dateexist == False) :
+        date_today = json.dumps(date_today, indent=4, sort_keys=True, default=str)
+        request = sheet.values().update(spreadsheetId=REQUIRED_SPREADSHEET_ID, 
+            range="Info!B"+str(row), valueInputOption="USER_ENTERED", body={"values":[[date_today]]}).execute()
+
+        request = sheet.values().update(spreadsheetId=REQUIRED_SPREADSHEET_ID, 
+            range="Info!C"+str(row), valueInputOption="USER_ENTERED", body={"values":[datalist]}).execute()
+        print (i, " extracted")
+    else: 
+        print (i, " passed")
+        pass
+   
     row = row + 1
 
 

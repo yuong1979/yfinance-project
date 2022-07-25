@@ -31,12 +31,30 @@ try:
     # Updating values
     # aoa = [["1/1/2020",4000],["4/4/2021",9000],["1/5/2022",7000]]
     # aoa = [["donkey"]]
-    aoa = [["1/1/2020","4/4/2021","4/4/2021","4/4/2021","4/4/2021"]]
+    rows = [["1/1/2020","4/4/2021","4/4/2021","4/4/2021","4/4/2021"]]
+    cols = [["1/1/2020"],["4/4/2021"],["4/4/2021"],["4/4/2021"],["4/4/2021"]]
+    test = [["test"]]
 
     request = sheet.values().update(spreadsheetId=SAMPLE_SPREADSHEET_ID, 
-        range="Sheet2!B2", valueInputOption="USER_ENTERED", body={"values":aoa})
+        range="Sheet2!B2", valueInputOption="USER_ENTERED", body={"values":test})
     response = request.execute()
 
 
 except HttpError as err:
     print(err)
+
+
+# # date_today = datetime.today().replace(microsecond=0)
+# # print (date_today)
+
+# sa = gspread.service_account(filename="googlesheetsapi-keys.json")
+# sh = sa.open("google sheets api python test")
+# wks = sh.worksheet("Info")
+# # date_today = json.dumps(date_today, indent=4, sort_keys=True, default=str)
+# # wks.update('b2',date_today)
+
+# date_time_str = wks.acell('b2').value.strip('"')
+
+# # date_time_obj = datetime.strptime(date_time_str, '%Y-%m-%d %H:%M:%S')
+
+# # print (date_time_obj)

@@ -7,8 +7,12 @@ import numpy as np
 
 #sample information
 
-# current information
-msft = yf.Ticker("msft")
+company = yf.Ticker("meta")
+print (company.info)
+
+
+# # current information
+# msft = yf.Ticker("msft")
 
 # print (msft.info['industry'])
 
@@ -34,17 +38,18 @@ msft = yf.Ticker("msft")
 # # pnl - detailed
 # print (msft._financials)
 
-# pnl - summarized
-print (msft.financials)
+# # pnl - summarized
+# print (msft.financials)
 
-# pnl - cashflow
-print (msft.cashflow)
+# # pnl - cashflow
+# print (msft.cashflow)
 
-# revenue and earnings - last 4 years
-print (msft.earnings)
+# # revenue and earnings - last 4 years
+# print (msft.earnings)
 
 # # eps since listing
 # print (msft.earnings_history)
+
 
 
 
