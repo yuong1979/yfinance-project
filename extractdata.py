@@ -27,20 +27,7 @@ REQUIRED_SPREADSHEET_ID = '1_lobEzbiuP9TE2UZqmqSAwizT8f2oeuZ8mVuUTbBAsA'
 service = build('sheets', 'v4', credentials=creds)
 sheet = service.spreadsheets()
 
-#collecting the Tickers
-try:
-    range_names = ["Ticker!A2:B20"]
-    result = sheet.values().batchGet(
-        spreadsheetId=REQUIRED_SPREADSHEET_ID, ranges=range_names).execute()
-    Tickerranges = result.get('valueRanges', [])
-    Tickdata = Tickerranges[0]['values']
-    Ticklist = []
-    for [i] in Tickdata:
-        Ticklist.append(i)
-
-except HttpError as err:
-    print(err)
-
+sheetinfo = "Info"
 
 #collecting the KPIs
 try:
@@ -61,22 +48,18 @@ try:
 except HttpError as err:
     print(err)
 
-
-
-
-
-
 #Inject the KPIS into the rows of the info
 request = sheet.values().update(spreadsheetId=REQUIRED_SPREADSHEET_ID, 
-    range="Info!C1", valueInputOption="USER_ENTERED", body={"values":[kpilist]}).execute()
-#Inject the tickers into the cols of the info
-request = sheet.values().update(spreadsheetId=REQUIRED_SPREADSHEET_ID, 
-    range="Info!A2", valueInputOption="USER_ENTERED", body={"values":Tickdata}).execute()
+    range=sheetinfo+"!C1", valueInputOption="USER_ENTERED", body={"values":[kpilist]}).execute()
 
 
-# update the info data into the info sheet
+#collect all the tickers
+result = sheet.values().get(spreadsheetId=REQUIRED_SPREADSHEET_ID,
+                            range=sheetinfo+"!A2:A10000").execute()
+company = result.get('values', [])
+
 row = 2
-for i in Ticklist:
+for [i] in company:
     companyticker = yf.Ticker(i)
     datalist = []
     for j in kpilist:
@@ -87,7 +70,7 @@ for i in Ticklist:
     date_today = datetime.today().replace(microsecond=0)
 
     result = sheet.values().get(spreadsheetId=REQUIRED_SPREADSHEET_ID,
-                                range="Info!B"+str(row)).execute()
+                                range=sheetinfo+"!B"+str(row)).execute()
     date_time_str = result.get('values', [])
 
     try:
@@ -103,21 +86,16 @@ for i in Ticklist:
     if (date_today > recordplusone) or (dateexist == False) :
         date_today = json.dumps(date_today, indent=4, sort_keys=True, default=str)
         request = sheet.values().update(spreadsheetId=REQUIRED_SPREADSHEET_ID, 
-            range="Info!B"+str(row), valueInputOption="USER_ENTERED", body={"values":[[date_today]]}).execute()
+            range=sheetinfo+"!B"+str(row), valueInputOption="USER_ENTERED", body={"values":[[date_today]]}).execute()
 
         request = sheet.values().update(spreadsheetId=REQUIRED_SPREADSHEET_ID, 
-            range="Info!C"+str(row), valueInputOption="USER_ENTERED", body={"values":[datalist]}).execute()
-        print (i, " extracted")
+            range=sheetinfo+"!C"+str(row), valueInputOption="USER_ENTERED", body={"values":[datalist]}).execute()
+        print (i, sheetinfo + " extracted")
     else: 
-        print (i, " passed")
+        print (i, sheetinfo + " passed")
         pass
    
     row = row + 1
-
-
-
-
-
 
 
 
