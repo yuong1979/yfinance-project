@@ -4,11 +4,35 @@ import numpy as np
 # import seaborn as sb
 # import matplotlib.pyplot as plt
 
+from datetime import datetime, timedelta
+from dateutil.relativedelta import relativedelta
 
 #sample information
 
-company = yf.Ticker("meta")
-print (company.info)
+companyticker = yf.Ticker("meta")
+# print (companyticker.recommendations['To Grade'].value_counts())
+# print (companyticker.financials)
+
+
+# #extracting financials
+# df = companyticker.financials
+# df.columns = pd.to_datetime(df.columns).strftime('%Y')
+# kpilist = ['Total Revenue', 'Net Income', 'Operating Income', 'Ebit']
+# df = df.loc[kpilist,]
+# print (df)
+
+
+# #extracting historical price
+# date_today = datetime.today().replace(microsecond=0)
+# startdate = date_today - relativedelta(years=5)
+# enddate = date_today - timedelta(days=1)
+# pricehistory = companyticker.history(start=startdate,  end=enddate)
+# # choose only closing date
+# pricehistory = pricehistory.iloc[:, [3]]
+# data = pricehistory.loc[pricehistory.index.day==1]
+# print (data)
+
+
 
 
 # # current information
