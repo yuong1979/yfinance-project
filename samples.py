@@ -1,82 +1,56 @@
+from calendar import day_abbr, month
+from sre_parse import State
 import yfinance as yf
 import pandas as pd
 import numpy as np
 # import seaborn as sb
 # import matplotlib.pyplot as plt
 
+
+import os.path
+from google.auth.transport.requests import Request
+from google.oauth2.credentials import Credentials
+from google_auth_oauthlib.flow import InstalledAppFlow
+from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
+from google.oauth2 import service_account
+import gspread
+import json
+import yfinance as yf
+from datetime import datetime, timedelta
+
+from bs4 import BeautifulSoup
+import requests
+
+from firebase_admin import firestore
+import pandas as pd
+import plotly.express as px
+import time
+from datetime import datetime as dt
+import pytz
+import re
+
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
 
-#sample information
+from firebase_admin import firestore
+db = firestore.Client.from_service_account_json("secret/serviceAccountKey.json")
 
-companyticker = yf.Ticker("meta")
-# print (companyticker.recommendations['To Grade'].value_counts())
-# print (companyticker.financials)
-
-
-# #extracting financials
-# df = companyticker.financials
-# df.columns = pd.to_datetime(df.columns).strftime('%Y')
-# kpilist = ['Total Revenue', 'Net Income', 'Operating Income', 'Ebit']
-# df = df.loc[kpilist,]
-# print (df)
-
-
-# #extracting historical price
-# date_today = datetime.today().replace(microsecond=0)
-# startdate = date_today - relativedelta(years=5)
-# enddate = date_today - timedelta(days=1)
-# pricehistory = companyticker.history(start=startdate,  end=enddate)
-# # choose only closing date
-# pricehistory = pricehistory.iloc[:, [3]]
-# data = pricehistory.loc[pricehistory.index.day==1]
-# print (data)
+import pytz
+import time
 
 
 
 
-# # current information
-# msft = yf.Ticker("msft")
-
-# print (msft.info['industry'])
-
-# # price history
-# hist = msft.history(period="max")
-# print (hist)
-
-# # recommendations
-# print (msft.recommendations['To Grade'].value_counts())
-
-# # ytd details
-# print (msft.info)
-
-# # ytd details
-# print (msft.info)
-
-# # stock splits and dividends
-# print (msft.actions)
-
-# # balance sheet
-# print (msft.balancesheet)
-
-# # pnl - detailed
-# print (msft._financials)
-
-# # pnl - summarized
-# print (msft.financials)
-
-# # pnl - cashflow
-# print (msft.cashflow)
-
-# # revenue and earnings - last 4 years
-# print (msft.earnings)
-
-# # eps since listing
-# print (msft.earnings_history)
 
 
+# rows = [["1/1/2020","4/4/2021","4/4/2021","4/4/2021","4/4/2021"]]
+# cols = [["1/1/2020"],["4/4/2021"],["4/4/2021"],["4/4/2021"],["4/4/2021"]]
+# test = [["test"]]
 
-
+# request = sheet.values().update(spreadsheetId=REQUIRED_SPREADSHEET_ID, 
+#     range="Sheet2!B2", valueInputOption="USER_ENTERED", body={"values":cols})
+# response = request.execute()
 
 
 
