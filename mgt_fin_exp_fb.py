@@ -16,7 +16,7 @@ db = firestore.Client.from_service_account_json("secret/serviceAccountKey.json")
 tz_SG = pytz.timezone('Singapore')
 datetime_SG = datetime.now(tz_SG)
 
-hoursbeforeextract = 27
+hoursbeforeextract = 36
 secb4extract = hoursbeforeextract * 60 * 60
 
 target_datetime = datetime_SG - timedelta(seconds=secb4extract)

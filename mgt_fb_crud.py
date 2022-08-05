@@ -183,19 +183,29 @@ import numpy as np
 
 
 # # delete all documents in a collection
-# docs = db.collection('tickerlist').get()
+# collection = "tickerlisttest"
+# docs = db.collection(collection).get()
 # for doc in docs:
 #     key = doc.id
-#     db.collection('tickerlist').document(key).delete()
+#     db.collection(collection).document(key).delete()
 
 # # delete kpi fields from a collection
+# collection = "tickerlisttest"
 # fieldtodelete = "longBusinessSummary"
-# docs = db.collection('tickerlisttest').get()
+# docs = db.collection(collection).get()
 # for doc in docs:
 #     key = doc.id
-#     db.collection('tickerlisttest').document(key).update({
+#     db.collection(collection).document(key).update({
 #     fieldtodelete: firestore.DELETE_FIELD
 # })
+
+# # delete certain documents in a collection
+# collection = "kpilist"
+# docs = db.collection(collection).where("rate", "==", 0).get()
+# for doc in docs:
+#     key = doc.id
+#     print (doc.id)
+#     db.collection(collection).document(key).delete()
 
 
 

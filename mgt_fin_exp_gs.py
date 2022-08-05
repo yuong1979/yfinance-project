@@ -20,6 +20,10 @@ datalist = []
 for i in docs:
     try:
         data = i._data['kpi']
+
+        #convert mkt cap with fx rate here and insert as a new data
+
+
         data["ticker"] = i._data['ticker']
         data["tickername"] = i._data['tickername']
         #got to convert datetime into a format acceptable by google sheets and wont throw error
