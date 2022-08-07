@@ -3,8 +3,6 @@ from sre_parse import State
 import yfinance as yf
 import pandas as pd
 import numpy as np
-# import seaborn as sb
-# import matplotlib.pyplot as plt
 
 
 import os.path
@@ -41,17 +39,5 @@ import time
 
 
 
-
-
-
-# rows = [["1/1/2020","4/4/2021","4/4/2021","4/4/2021","4/4/2021"]]
-# cols = [["1/1/2020"],["4/4/2021"],["4/4/2021"],["4/4/2021"],["4/4/2021"]]
-# test = [["test"]]
-
-# request = sheet.values().update(spreadsheetId=REQUIRED_SPREADSHEET_ID, 
-#     range="Sheet2!B2", valueInputOption="USER_ENTERED", body={"values":cols})
-# response = request.execute()
-
-
-
-
+def testing():
+    print ("testing hello")

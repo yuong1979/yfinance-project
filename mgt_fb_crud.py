@@ -7,6 +7,7 @@ from firebase_admin import firestore
 import yfinance as yf
 import pandas as pd
 import numpy as np
+import timeit
 
 
 
@@ -59,27 +60,236 @@ import numpy as np
 
 
 # #################################################################################################
-# ####### Move kpi fields from a dictionary to a field in the main document if ####################
-# ####### extraction becomes so huge filter needs to be done on firebase ##########################
+# ####### Extracting data from yfinance into firebase and include usd values (UNDER TESTING) ######
+# ####### To replace mgt_fin_exp_fb.py when this is completed #####################################
 # #################################################################################################
 
+def currencyclean(currency):
+    if currency == "GBp":
+        currency_cleaned = "GBP"
+    elif currency == "ZAc":
+        currency_cleaned = "ZAR"
+    else:
+        currency_cleaned = currency
+    return currency_cleaned
 
-# # # move kpi fields from a dictionary within to a field in the main document
-# docs = db.collection('tickerlisttest').stream()
-# for doc in docs:
-#     sector = doc._data['kpi']['sector']
-#     marketCap = doc._data['kpi']['marketCap']
-#     industry = doc._data['kpi']['industry']
-#     longBusinessSummary = doc._data['kpi']['longBusinessSummary']
-#     key = doc.id
-#     data = {"marketCap": marketCap}
-#     db.collection('tickerlisttest').document(key).update(data)
-#     data = {"sector": sector}
-#     db.collection('tickerlisttest').document(key).update(data)
-#     data = {"industry": industry}
-#     db.collection('tickerlisttest').document(key).update(data)
-#     data = {"longBusinessSummary": longBusinessSummary}
-#     db.collection('tickerlisttest').document(key).update(data)
+
+db = firestore.Client.from_service_account_json("secret/serviceAccountKey.json")
+
+tz_SG = pytz.timezone('Singapore')
+datetime_SG = datetime.now(tz_SG)
+
+hoursbeforeextract = 36
+secb4extract = hoursbeforeextract * 60 * 60
+
+target_datetime = datetime_SG - timedelta(seconds=secb4extract)
+
+# if what is on record is updated less than 23(hoursbeforeextract) hours ago, we need to get the record for update
+tickerlist = db.collection('tickerlist').where('updated_datetime', '<=', target_datetime).order_by("updated_datetime", direction=firestore.Query.ASCENDING).get()
+print (len(tickerlist), "number of entries to update")
+
+
+for i in tickerlist:
+    time.sleep(1)
+    ticker = i._data['ticker']
+    updated_time = i._data['updated_datetime']
+    companyinfo = yf.Ticker(ticker)
+
+    try:
+        # print (i._data['kpi']["currency"])
+        currency_to_cln = i._data['kpi']["currency"]
+        currency = currencyclean(currency_to_cln)
+        docs = db.collection('fx').where("currency", "==", currency).get()[0]
+        rate = docs.to_dict()['rate']
+        #convert string to float
+        rate = float(rate)
+    except KeyError:
+        rate = ""
+
+    except Exception as e:
+        print (e)
+
+    key = i.id
+
+    try:
+        marketCapUSD = i._data['kpi']["marketCap"] * rate
+    except Exception as e:
+        marketCapUSD = ""
+
+    try:
+        enterpriseValueUSD = i._data['kpi']["enterpriseValue"] * rate
+    except Exception as e:
+        enterpriseValueUSD = ""
+
+    try:
+        freeCashflowUSD = i._data['kpi']["freeCashflow"] * rate
+    except Exception as e:
+        freeCashflowUSD = ""
+
+    try:
+        operatingCashflowUSD = i._data['kpi']["operatingCashflow"] * rate
+    except Exception as e:
+        operatingCashflowUSD = ""
+        
+    try:
+        totalDebtUSD = i._data['kpi']["totalDebt"] * rate
+    except Exception as e:
+        totalDebtUSD = ""
+        
+    try:
+        totalRevenueUSD = i._data['kpi']["totalRevenue"] * rate
+    except Exception as e:
+        totalRevenueUSD = ""
+        
+    try:
+        grossProfitsUSD = i._data['kpi']["grossProfits"] * rate
+    except Exception as e:
+        grossProfitsUSD = ""
+        
+    try:
+        ebitdaUSD = i._data['kpi']["ebitda"] * rate
+    except Exception as e:
+        ebitdaUSD = ""
+
+    try:
+        currentPriceUSD = i._data['kpi']["currentPrice"] * rate
+    except Exception as e:
+        currentPriceUSD = "" 
+
+    data = {
+
+        'kpi': companyinfo.info,
+        'updated_datetime': datetime_SG,
+        'activated': True,
+
+        "marketCapUSD": marketCapUSD,
+        "enterpriseValueUSD": enterpriseValueUSD,
+        "freeCashflowUSD": freeCashflowUSD,
+        "operatingCashflowUSD": operatingCashflowUSD,
+        "totalDebtUSD": totalDebtUSD,
+        "totalRevenueUSD": totalRevenueUSD,
+        "grossProfitsUSD": grossProfitsUSD,
+        "ebitdaUSD": ebitdaUSD,
+        "currentPriceUSD": currentPriceUSD
+    }
+
+    #updating data into firebase
+    db.collection('tickerlist').document(i.id).set(data, merge=True)
+    print ("Updated " + str(i._data['ticker']))
+
+
+
+
+
+
+# # #################################################################################################
+# # ####### Convert certain KPI fields to USD value for export in google sheets #####################
+# # #################################################################################################
+
+# # there is an unknown error running the below script
+# # AttributeError: '_UnaryStreamMultiCallable' object has no attribute '_retry'
+
+
+# def currencyclean(currency):
+#     if currency == "GBp":
+#         currency_cleaned = "GBP"
+#     elif currency == "ZAc":
+#         currency_cleaned = "ZAR"
+#     else:
+#         currency_cleaned = currency
+#     return currency_cleaned
+
+
+# # # move fx and the USD values from a dictionary within to a field in the main document
+# st = time.time()
+# collection_to_update = "tickerlist"
+# db = firestore.Client.from_service_account_json("secret/serviceAccountKey.json")
+# docs = db.collection(collection_to_update).stream()
+# for i in docs:
+
+#     print (i._data["ticker"])
+    
+#     try:
+#         print (i._data['kpi']["currency"])
+#         currency_to_cln = i._data['kpi']["currency"]
+#         currency = currencyclean(currency_to_cln)
+#         docs = db.collection('fx').where("currency", "==", currency).get()[0]
+#         rate = docs.to_dict()['rate']
+#         #convert string to float
+#         rate = float(rate)
+#     except KeyError:
+#         rate = ""
+
+#     except Exception as e:
+#         print (e)
+
+#     key = i.id
+
+
+
+#     try:
+#          marketCapUSD = i._data['kpi']["marketCap"] * rate
+#     except Exception as e:
+#         marketCapUSD = ""
+
+#     try:
+#          enterpriseValueUSD = i._data['kpi']["enterpriseValue"] * rate
+#     except Exception as e:
+#         enterpriseValueUSD = ""
+
+#     try:
+#          freeCashflowUSD = i._data['kpi']["freeCashflow"] * rate
+#     except Exception as e:
+#         freeCashflowUSD = ""
+
+#     try:
+#          operatingCashflowUSD = i._data['kpi']["operatingCashflow"] * rate
+#     except Exception as e:
+#         operatingCashflowUSD = ""
+        
+#     try:
+#          totalDebtUSD = i._data['kpi']["totalDebt"] * rate
+#     except Exception as e:
+#         totalDebtUSD = ""
+        
+#     try:
+#          totalRevenueUSD = i._data['kpi']["totalRevenue"] * rate
+#     except Exception as e:
+#         totalRevenueUSD = ""
+        
+#     try:
+#          grossProfitsUSD = i._data['kpi']["grossProfits"] * rate
+#     except Exception as e:
+#         grossProfitsUSD = ""
+        
+#     try:
+#          ebitdaUSD = i._data['kpi']["ebitda"] * rate
+#     except Exception as e:
+#         ebitdaUSD = ""
+
+#     try:
+#          currentPriceUSD = i._data['kpi']["currentPrice"] * rate
+#     except Exception as e:
+#         currentPriceUSD = "" 
+
+#     data = {
+#         "marketCapUSD": marketCapUSD,
+#         "enterpriseValueUSD": enterpriseValueUSD,
+#         "freeCashflowUSD": freeCashflowUSD,
+#         "operatingCashflowUSD": operatingCashflowUSD,
+#         "totalDebtUSD": totalDebtUSD,
+#         "totalRevenueUSD": totalRevenueUSD,
+#         "grossProfitsUSD": grossProfitsUSD,
+#         "ebitdaUSD": ebitdaUSD
+#     }
+
+#     db.collection(collection_to_update).document(key).update(data)
+
+# et = time.time()
+
+# print("elapsedtime" ,(et - st))
+
+
 
 
 
@@ -175,6 +385,14 @@ import numpy as np
 #     print(obj._data['kpi']['sector'])
 #     print(obj._data['updated_datetime'])
 
+# # Reading one single ticker
+# docs = db.collection("tickerlist").where("ticker", "==", "NENT-B.ST").get()
+# print(docs[0]._data['kpi']['currency'])
+
+
+# # if required to do a sort
+# tickerlist = db.collection('tickerlist').where('updated_datetime', '<=', target_datetime).order_by("updated_datetime", direction=firestore.Query.ASCENDING).get()
+
 
 
 # ################################################################
@@ -229,6 +447,31 @@ import numpy as np
 # df = pd.DataFrame(datalist)
 # df.replace(np.nan, '', inplace=True)
 # df.to_csv("testtime.csv")
+
+
+
+
+
+
+# ##################################################################################################
+# ###### Extracting from alpha vantage for analysis VANTAGE DOES NOT HAVE ALL I HAVE ###############
+# ##################################################################################################
+
+## you might want to concern https://marketstack.com/?utm_source=Geekflare&utm_medium=LeadsAcquisition&utm_content=Listing
+## as an alternative
+
+
+# from secret import alpha_vantage
+# api_key = alpha_vantage.api_key
+# # ticker = 'D05.SI'
+# # r = requests.get('https://www.alphavantage.co/query?function=OVERVIEW&symbol='+ticker+'&apikey=' + api_key)
+# # dataobj = r.json()
+# # print (dataobj)
+
+# # search = 'dbs'
+# # r = requests.get('https://www.alphavantage.co/query?function=SYMBOL_SEARCH&keywords='+search+'&apikey=' + api_key)
+# # dataobj = r.json()
+# # print (dataobj)
 
 
 

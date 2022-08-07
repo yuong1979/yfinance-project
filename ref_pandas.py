@@ -49,3 +49,6 @@ print (df.columns)
 # ## selecting a few columns using numbers
 # df = df.iloc[:, 2:10]
 # print (df)
+
+
+

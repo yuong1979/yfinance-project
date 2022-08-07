@@ -1,5 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
+from samples import testing
+
 
 app = Flask(__name__)
 
@@ -23,6 +25,15 @@ class Todo(db.Model):
 
 
 db.create_all()
+
+
+
+@app.get("/test")
+def test():
+    testing()
+    return render_template("base.html")
+
+
 
 
 @app.get("/")
