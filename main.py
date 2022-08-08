@@ -10,6 +10,7 @@ app = Flask(__name__)
 
 port = 5000
 
+
 # Initialize Firestore DB
 cred = credentials.Certificate('secret/serviceAccountKey.json')
 default_app = initialize_app(cred)
@@ -33,14 +34,16 @@ def run_extract_to_gs():
     return redirect(url_for("home"))
 
 
-
-
 @app.get("/")
 def home():
-    tickerlist = db.collection('tickerlist').order_by("updated_datetime", direction=firestore.Query.ASCENDING).limit(10).get()
+
+    earliest_tickerlist = db.collection('tickerlist').order_by("updated_datetime", direction=firestore.Query.ASCENDING).limit(5).get()
+    latest_tickerlist = db.collection('tickerlist').order_by("updated_datetime", direction=firestore.Query.DESCENDING).limit(5).get()
     fxlist = db.collection('fx').order_by("updated_datetime", direction=firestore.Query.ASCENDING).limit(10).get()
-    #add fx last time extracted
-    return render_template("base.html", tickerlist=tickerlist, fxlist=fxlist)
+    return render_template("base.html", 
+        earliest_tickerlist=earliest_tickerlist,
+        latest_tickerlist=latest_tickerlist, 
+        fxlist=fxlist)
 
 
 if __name__ == "__main__":

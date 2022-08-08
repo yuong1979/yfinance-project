@@ -14,9 +14,18 @@
 
     <div style="margin-top: 50px;" class="ui container split left">
         <h2> Latest ticker updated</h2>
-        {% for i in tickerlist %}
+        {% for i in latest_tickerlist %}
         <div class="ui segment">
-            <p class="ui big header">{{ i._data['ticker'] }} / {{ i._data['tickername'] }} / {{ i._data['updated_datetime'] }}</p>
+            <p class="ui big header">{{ i._data['updated_datetime'] }} / {{ i._data['ticker'] }} / {{ i._data['tickername'] }}</p>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div style="margin-top: 50px;" class="ui container split left">
+        <h2> Earliest ticker updated</h2>
+        {% for i in earliest_tickerlist %}
+        <div class="ui segment">
+            <p class="ui big header">{{ i._data['updated_datetime'] }} / {{ i._data['ticker'] }} / {{ i._data['tickername'] }}</p>
         </div>
         {% endfor %}
     </div>

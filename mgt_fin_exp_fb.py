@@ -14,6 +14,8 @@ import numpy as np
 # ####### To replace mgt_fin_exp_fb.py when this is completed #####################################
 # #################################################################################################
 
+############### Running the function from the command line ###############
+# python -c 'from mgt_fin_exp_fb import extract_to_fb; extract_to_fb()'
 
 def extract_to_fb():
 
@@ -46,6 +48,8 @@ def extract_to_fb():
 
 
     for i in tickerlist:
+        print ("Updating " + str(i._data['ticker']))
+        recordtime = datetime.now(tz_SG)
         time.sleep(1)
         ticker = i._data['ticker']
         updated_time = i._data['updated_datetime']
@@ -116,7 +120,7 @@ def extract_to_fb():
         data = {
 
             'kpi': companyinfo.info,
-            'updated_datetime': datetime_SG,
+            'updated_datetime': recordtime,
             'activated': True,
 
             "marketCapUSD": marketCapUSD,
