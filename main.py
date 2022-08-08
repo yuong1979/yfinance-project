@@ -1,8 +1,10 @@
 from flask import Flask, render_template, request, redirect, url_for
-from flask_sqlalchemy import SQLAlchemy
-from samples import ticker_update , fx_update , extract_to_gs
 from firebase_admin import firestore, credentials, initialize_app
 from secret import apikeys
+from mgt_fin_exp_fb import extract_to_fb
+from fx import extract_fx
+from mgt_fin_exp_gs import extract_to_gs
+
 
 app = Flask(__name__)
 
@@ -15,25 +17,22 @@ db = firestore.client()
 
 pw = apikeys.run_cloud_key
 
-# for testing
-# http://localhost:5000/ticker_update_v5w4ZaM6*7B9
-# http://localhost:5000/fx_update_v5w4ZaM6*7B9
-# http://localhost:5000/extract_to_gs_v5w4ZaM6*7B9
-
-@app.get("/ticker_update_" + pw)
-def run_ticker_update():
-    ticker_update()
+@app.get("/extract_info_fb_" + pw)
+def run_extract_to_fb():
+    extract_to_fb()
     return redirect(url_for("home"))
 
-@app.get("/fx_update_" + pw)
-def run_fx_update():
-    fx_update()
+@app.get("/extract_fx_fb_" + pw)
+def run_extract_fx():
+    extract_fx()
     return redirect(url_for("home"))
 
 @app.get("/extract_to_gs_" + pw)
 def run_extract_to_gs():
     extract_to_gs()
     return redirect(url_for("home"))
+
+
 
 
 @app.get("/")

@@ -8,48 +8,178 @@ import pandas as pd
 import numpy as np
 
 
-# ###############################################################################################################
-# ######## Daily Updating firebase finance info with yfinance - OLD VERSION ABOUT TO REPLACED ###################
-# ###############################################################################################################
 
-db = firestore.Client.from_service_account_json("secret/serviceAccountKey.json")
+# #################################################################################################
+# ####### Extracting data from yfinance into firebase and include usd values (UNDER TESTING) ######
+# ####### To replace mgt_fin_exp_fb.py when this is completed #####################################
+# #################################################################################################
 
-tz_SG = pytz.timezone('Singapore')
-datetime_SG = datetime.now(tz_SG)
 
-hoursbeforeextract = 36
-secb4extract = hoursbeforeextract * 60 * 60
+def extract_to_fb():
 
-target_datetime = datetime_SG - timedelta(seconds=secb4extract)
+    #converting currency from yfinance into correct currency that can be found in alpha vantage
+    def currencyclean(currency):
+        if currency == "GBp":
+            currency_cleaned = "GBP"
+        elif currency == "ZAc":
+            currency_cleaned = "ZAR"
+        elif currency == "ILA":
+            currency_cleaned = "ILS"
+        else:
+            currency_cleaned = currency
+        return currency_cleaned
 
-# if what is on record is updated less than 23(hoursbeforeextract) hours ago, we need to get the record for update
-tickerlist = db.collection('tickerlist').where('updated_datetime', '<=', target_datetime).order_by("updated_datetime", direction=firestore.Query.ASCENDING).get()
-print (len(tickerlist), "number of entries to update")
 
-###############################################################################################
-################### exclude below except when analyzing the data ##############################
-###############################################################################################
-# datalist = []
-# for i in tickerlist:
-#     try:
-#         datalist.append([i._data['updated_datetime'],i._data['tickername'],i._data['kpi']])
-#     except KeyError:
-#         datalist.append([i._data['updated_datetime'],i._data['tickername'],"does_not_exists"])
-# df = pd.DataFrame(datalist)
-# df.replace(np.nan, '', inplace=True)
-# df.to_csv("testtime.csv")
+    db = firestore.Client.from_service_account_json("secret/serviceAccountKey.json")
 
-for i in tickerlist:
-    time.sleep(1)
-    ticker = i._data['ticker']
-    updated_time = i._data['updated_datetime']
-    print (updated_time)
-    companyinfo = yf.Ticker(ticker)
-    data={
-        'kpi': companyinfo.info,
-        'updated_datetime': datetime_SG,
-        'activated': True
+    tz_SG = pytz.timezone('Singapore')
+    datetime_SG = datetime.now(tz_SG)
+
+    hoursbeforeextract = 48
+    secb4extract = hoursbeforeextract * 60 * 60
+
+    target_datetime = datetime_SG - timedelta(seconds=secb4extract)
+
+    # if what is on record is updated less than 23(hoursbeforeextract) hours ago, we need to get the record for update
+    tickerlist = db.collection('tickerlist').where('updated_datetime', '<=', target_datetime).order_by("updated_datetime", direction=firestore.Query.ASCENDING).get()
+    print (len(tickerlist), "number of entries to update")
+
+
+    for i in tickerlist:
+        time.sleep(1)
+        ticker = i._data['ticker']
+        updated_time = i._data['updated_datetime']
+        companyinfo = yf.Ticker(ticker)
+
+        try:
+            # print (i._data['kpi']["currency"])
+            currency_to_cln = i._data['kpi']["currency"]
+            #converting currency from yfinance into correct currency that can be found in alpha vantage
+            currency = currencyclean(currency_to_cln)
+            docs = db.collection('fx').where("currency", "==", currency).get()[0]
+            rate = docs.to_dict()['rate']
+            #convert string to float
+            rate = float(rate)
+        except KeyError:
+            rate = ""
+
+        except Exception as e:
+            print (e)
+
+        key = i.id
+
+        try:
+            marketCapUSD = i._data['kpi']["marketCap"] * rate
+        except Exception as e:
+            marketCapUSD = ""
+
+        try:
+            enterpriseValueUSD = i._data['kpi']["enterpriseValue"] * rate
+        except Exception as e:
+            enterpriseValueUSD = ""
+
+        try:
+            freeCashflowUSD = i._data['kpi']["freeCashflow"] * rate
+        except Exception as e:
+            freeCashflowUSD = ""
+
+        try:
+            operatingCashflowUSD = i._data['kpi']["operatingCashflow"] * rate
+        except Exception as e:
+            operatingCashflowUSD = ""
+            
+        try:
+            totalDebtUSD = i._data['kpi']["totalDebt"] * rate
+        except Exception as e:
+            totalDebtUSD = ""
+            
+        try:
+            totalRevenueUSD = i._data['kpi']["totalRevenue"] * rate
+        except Exception as e:
+            totalRevenueUSD = ""
+            
+        try:
+            grossProfitsUSD = i._data['kpi']["grossProfits"] * rate
+        except Exception as e:
+            grossProfitsUSD = ""
+            
+        try:
+            ebitdaUSD = i._data['kpi']["ebitda"] * rate
+        except Exception as e:
+            ebitdaUSD = ""
+
+        try:
+            currentPriceUSD = i._data['kpi']["currentPrice"] * rate
+        except Exception as e:
+            currentPriceUSD = "" 
+
+        data = {
+
+            'kpi': companyinfo.info,
+            'updated_datetime': datetime_SG,
+            'activated': True,
+
+            "marketCapUSD": marketCapUSD,
+            "enterpriseValueUSD": enterpriseValueUSD,
+            "freeCashflowUSD": freeCashflowUSD,
+            "operatingCashflowUSD": operatingCashflowUSD,
+            "totalDebtUSD": totalDebtUSD,
+            "totalRevenueUSD": totalRevenueUSD,
+            "grossProfitsUSD": grossProfitsUSD,
+            "ebitdaUSD": ebitdaUSD,
+            "currentPriceUSD": currentPriceUSD
         }
-    #updating data into firebase
-    db.collection('tickerlist').document(i.id).set(data, merge=True)
-    print ("Updated " + str(i._data['ticker']))
+
+        #updating data into firebase
+        db.collection('tickerlist').document(i.id).set(data, merge=True)
+        print ("Updated " + str(i._data['ticker']))
+
+
+
+
+
+# # ###############################################################################################################
+# # ######## Daily Updating firebase finance info with yfinance - OLD VERSION ( REPLACED ) ########################
+# # ###############################################################################################################
+
+# db = firestore.Client.from_service_account_json("secret/serviceAccountKey.json")
+
+# tz_SG = pytz.timezone('Singapore')
+# datetime_SG = datetime.now(tz_SG)
+
+# hoursbeforeextract = 72
+# secb4extract = hoursbeforeextract * 60 * 60
+
+# target_datetime = datetime_SG - timedelta(seconds=secb4extract)
+
+# # if what is on record is updated less than 23(hoursbeforeextract) hours ago, we need to get the record for update
+# tickerlist = db.collection('tickerlist').where('updated_datetime', '<=', target_datetime).order_by("updated_datetime", direction=firestore.Query.ASCENDING).get()
+# print (len(tickerlist), "number of entries to update")
+
+# ###############################################################################################
+# ################### exclude below except when analyzing the data ##############################
+# ###############################################################################################
+# # datalist = []
+# # for i in tickerlist:
+# #     try:
+# #         datalist.append([i._data['updated_datetime'],i._data['tickername'],i._data['kpi']])
+# #     except KeyError:
+# #         datalist.append([i._data['updated_datetime'],i._data['tickername'],"does_not_exists"])
+# # df = pd.DataFrame(datalist)
+# # df.replace(np.nan, '', inplace=True)
+# # df.to_csv("testtime.csv")
+
+# for i in tickerlist:
+#     time.sleep(1)
+#     ticker = i._data['ticker']
+#     updated_time = i._data['updated_datetime']
+#     print (updated_time)
+#     companyinfo = yf.Ticker(ticker)
+#     data={
+#         'kpi': companyinfo.info,
+#         'updated_datetime': datetime_SG,
+#         'activated': True
+#         }
+#     #updating data into firebase
+#     db.collection('tickerlist').document(i.id).set(data, merge=True)
+#     print ("Updated " + str(i._data['ticker']))

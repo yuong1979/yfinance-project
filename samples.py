@@ -39,12 +39,4 @@ import time
 
 
 
-def ticker_update():
-    print ("ticker_update")
-
-def fx_update():
-    print ("fx_update")
-
-def extract_to_gs():
-    print ("extract_to_gs")
 
