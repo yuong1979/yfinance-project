@@ -4,7 +4,6 @@ import yfinance as yf
 import pandas as pd
 import numpy as np
 
-
 import os.path
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
@@ -24,11 +23,9 @@ from firebase_admin import firestore
 import pandas as pd
 import plotly.express as px
 import time
-from datetime import datetime as dt
 import pytz
 import re
 
-from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
 
 from firebase_admin import firestore
@@ -36,6 +33,8 @@ db = firestore.Client.from_service_account_json("secret/serviceAccountKey.json")
 
 import pytz
 import time
+
+
 
 
 

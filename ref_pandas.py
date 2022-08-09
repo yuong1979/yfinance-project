@@ -50,5 +50,8 @@ print (df.columns)
 # df = df.iloc[:, 2:10]
 # print (df)
 
+## group by functions that are powerful
+
+
 
 

@@ -62,183 +62,6 @@ import timeit
 
 
 
-# # #################################################################################################
-# # ####### Convert certain KPI fields to USD value for export in google sheets #####################
-# # #################################################################################################
-
-# # there is an unknown error running the below script
-# # AttributeError: '_UnaryStreamMultiCallable' object has no attribute '_retry'
-
-
-# def currencyclean(currency):
-#     if currency == "GBp":
-#         currency_cleaned = "GBP"
-#     elif currency == "ZAc":
-#         currency_cleaned = "ZAR"
-#     else:
-#         currency_cleaned = currency
-#     return currency_cleaned
-
-
-# # # move fx and the USD values from a dictionary within to a field in the main document
-# st = time.time()
-# collection_to_update = "tickerlist"
-# db = firestore.Client.from_service_account_json("secret/serviceAccountKey.json")
-# docs = db.collection(collection_to_update).stream()
-# for i in docs:
-
-#     print (i._data["ticker"])
-    
-#     try:
-#         print (i._data['kpi']["currency"])
-#         currency_to_cln = i._data['kpi']["currency"]
-#         currency = currencyclean(currency_to_cln)
-#         docs = db.collection('fx').where("currency", "==", currency).get()[0]
-#         rate = docs.to_dict()['rate']
-#         #convert string to float
-#         rate = float(rate)
-#     except KeyError:
-#         rate = ""
-
-#     except Exception as e:
-#         print (e)
-
-#     key = i.id
-
-
-
-#     try:
-#          marketCapUSD = i._data['kpi']["marketCap"] * rate
-#     except Exception as e:
-#         marketCapUSD = ""
-
-#     try:
-#          enterpriseValueUSD = i._data['kpi']["enterpriseValue"] * rate
-#     except Exception as e:
-#         enterpriseValueUSD = ""
-
-#     try:
-#          freeCashflowUSD = i._data['kpi']["freeCashflow"] * rate
-#     except Exception as e:
-#         freeCashflowUSD = ""
-
-#     try:
-#          operatingCashflowUSD = i._data['kpi']["operatingCashflow"] * rate
-#     except Exception as e:
-#         operatingCashflowUSD = ""
-        
-#     try:
-#          totalDebtUSD = i._data['kpi']["totalDebt"] * rate
-#     except Exception as e:
-#         totalDebtUSD = ""
-        
-#     try:
-#          totalRevenueUSD = i._data['kpi']["totalRevenue"] * rate
-#     except Exception as e:
-#         totalRevenueUSD = ""
-        
-#     try:
-#          grossProfitsUSD = i._data['kpi']["grossProfits"] * rate
-#     except Exception as e:
-#         grossProfitsUSD = ""
-        
-#     try:
-#          ebitdaUSD = i._data['kpi']["ebitda"] * rate
-#     except Exception as e:
-#         ebitdaUSD = ""
-
-#     try:
-#          currentPriceUSD = i._data['kpi']["currentPrice"] * rate
-#     except Exception as e:
-#         currentPriceUSD = "" 
-
-#     data = {
-#         "marketCapUSD": marketCapUSD,
-#         "enterpriseValueUSD": enterpriseValueUSD,
-#         "freeCashflowUSD": freeCashflowUSD,
-#         "operatingCashflowUSD": operatingCashflowUSD,
-#         "totalDebtUSD": totalDebtUSD,
-#         "totalRevenueUSD": totalRevenueUSD,
-#         "grossProfitsUSD": grossProfitsUSD,
-#         "ebitdaUSD": ebitdaUSD
-#     }
-
-#     db.collection(collection_to_update).document(key).update(data)
-
-# et = time.time()
-
-# print("elapsedtime" ,(et - st))
-
-
-
-
-
-
-
-# ##########################################################################################################
-# ####### Managing kpilist - NO LONGER REQUIRED??? -TO DELETE IF NOT USED FOR 3 MONTH ######################
-# ##########################################################################################################
-
-# #Extracting data from yfinance and comparing to existing kpi inside firebase to
-# #check what is the difference - and add the difference to the collection if neccessary
-
-# #extracting data from the whole collection
-# fb_kpilist = []
-# docs = db.collection('kpilist').get()
-# for i in docs:
-#     fb_kpilist.append(i._data['kpi'])
-
-# #extracting all kpis from yfinance
-# yfinance_kpilist = []
-# sample_company = "meta"
-# companyticker = yf.Ticker(sample_company)
-# info = companyticker.info
-# for i in info:
-#     yfinance_kpilist.append(i)
-
-# #getting list of kpis in yfinance but not in firebase
-# difference = list(set(yfinance_kpilist) - set(fb_kpilist))
-# print (difference)
-
-# ##adding the difference to the fb kpilist collection
-# # for i in difference:
-# #     data={'kpi': i, 'activated': True}
-# #     db.collection('kpilist').add(data)
-
-
-# # # update all collection in kpilist activated to true
-# # docs = db.collection('kpilist').where("activated", "==", False).get()
-# # for doc in docs:
-# #     key = doc.id
-# #     db.collection('kpilist').document(key).update({"activated": True})
-
-
-# ##########################################################################################################
-# ####### Count of the collection extracted after / before a certain date ##################################
-# ##########################################################################################################
-
-# day = 3
-# month = 8
-# year = 2022
-# hour = 22
-# minute = 0
-
-# target_date = datetime(
-#     year=year, 
-#     month=month, 
-#     day=day,
-#     hour=hour,
-#     minute=minute,
-#     tzinfo = pytz.timezone('Singapore')
-#     )
-
-# print (target_date)
-
-# # Count of the data that was extracted before after 12pm (based on above)
-# tickerlisttest = db.collection('tickerlist').where("updated_datetime", ">", target_date).get()
-# print(len(tickerlisttest))
-
-
 
 # #########################################################################
 # ####### reading data ####################################################
@@ -328,6 +151,50 @@ import timeit
 # df.replace(np.nan, '', inplace=True)
 # df.to_csv("testtime.csv")
 
+
+
+
+# ######################################################################################
+# ####### Migrating the testing ticker data to tickerdatatest ##########################
+# ######################################################################################
+
+# tickerlist = db.collection('tickerlist').limit(50).get()
+
+# for i in tickerlist:
+
+#     ticker = i._data['ticker']
+#     activated = i._data['activated']
+#     created_datetime = i._data['created_datetime']
+#     ebitdaUSD = i._data['ebitdaUSD']
+#     enterpriseValueUSD = i._data['enterpriseValueUSD']
+#     freeCashflowUSD = i._data['freeCashflowUSD']
+#     grossProfitsUSD = i._data['grossProfitsUSD']
+#     kpi = i._data['kpi']
+#     marketCapUSD = i._data['marketCapUSD']
+#     operatingCashflowUSD = i._data['operatingCashflowUSD']
+#     tickername = i._data['tickername']
+#     totalDebtUSD = i._data['totalDebtUSD']
+#     totalRevenueUSD = i._data['totalRevenueUSD']
+#     updated_datetime = i._data['updated_datetime']
+
+#     data = {
+
+#         'ticker': ticker,
+#         'activated': activated,
+#         "created_datetime": created_datetime,
+#         "ebitdaUSD": ebitdaUSD,
+#         "enterpriseValueUSD": enterpriseValueUSD,
+#         "grossProfitsUSD": grossProfitsUSD,
+#         "kpi": kpi,
+#         "marketCapUSD": marketCapUSD,
+#         "operatingCashflowUSD": operatingCashflowUSD,
+#         "tickername": tickername,
+#         "totalDebtUSD": totalDebtUSD,
+#         "totalRevenueUSD": totalRevenueUSD,
+#         "updated_datetime": updated_datetime
+#     }
+
+#     db.collection('tickerlisttest').document(i.id).set(data, merge=True)
 
 
 

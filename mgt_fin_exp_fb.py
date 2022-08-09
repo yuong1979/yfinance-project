@@ -49,6 +49,7 @@ def extract_to_fb():
 
     for i in tickerlist:
         print ("Updating " + str(i._data['ticker']))
+        # print ("Last time updated is " + str(i._data['updated_datetime']))
         recordtime = datetime.now(tz_SG)
         time.sleep(1)
         ticker = i._data['ticker']

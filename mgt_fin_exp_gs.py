@@ -9,9 +9,20 @@ from googleapiclient.discovery import build
 from datetime import datetime, timedelta
 
 # ###############################################################################
-# ######## Daily Updating google sheets with firebase ###########################
+# ######## Daily Updating google sheets - ticker info with firebase #############
 # ###############################################################################
+
+############### Running the function from the command line ###############
+# python -c 'from mgt_fin_exp_gs import extract_to_gs; extract_to_gs()'
+
 db = firestore.Client.from_service_account_json("secret/serviceAccountKey.json")
+
+
+def hour_rounder(t):
+    # Rounds to nearest hour by adding a timedelta hour if minute >= 30
+    return (t.replace(second=0, microsecond=0, minute=0, hour=t.hour)
+               +timedelta(hours=t.minute//30))
+
 
 
 def extract_to_gs():
@@ -147,6 +158,79 @@ def extract_to_gs():
     service = build('sheets', 'v4', credentials=creds)
     sheet = service.spreadsheets()
     sheetinfo = "Info"
+
+
+    #Inject the KPIS into the rows of the info
+    request = sheet.values().update(spreadsheetId=REQUIRED_SPREADSHEET_ID, 
+        range=sheetinfo+"!A2", valueInputOption="USER_ENTERED", body={"values":dflist}).execute()
+
+
+    #Inject the KPIS into the rows of the info
+    request = sheet.values().update(spreadsheetId=REQUIRED_SPREADSHEET_ID, 
+        range=sheetinfo+"!A1", valueInputOption="USER_ENTERED", body={"values":[dfcol]}).execute()
+
+
+
+
+
+# ###############################################################################
+# ######## Daily Updating google sheets - datetime info with firebase ###########
+# ###############################################################################
+
+############### Running the function from the command line ###############
+# python -c 'from mgt_fin_exp_gs import extract_date_time_to_gs; extract_date_time_to_gs()'
+
+
+def extract_date_time_to_gs():
+
+    #### export required data to google sheets ######
+    docs = db.collection('tickerlist').order_by("updated_datetime", direction=firestore.Query.ASCENDING).stream()
+
+    datalist = []
+    for i in docs:
+        try:
+            data = i._data['kpi']
+            data["ticker"] = i._data['ticker']
+            data["tickername"] = i._data['tickername']
+            #got to convert datetime into a format acceptable by google sheets and wont throw error
+            data["updated_datetime"] = hour_rounder(i._data['updated_datetime']).strftime('%Y-%m-%d %H:%M:%S')
+            datalist.append(data)
+        except KeyError:
+            pass
+
+    df = pd.DataFrame(datalist)
+    df.replace(np.nan, '', inplace=True)
+
+
+    # .strftime('%Y-%m-%d %H:%M:%S')
+
+    ## Selected KPIs including usd values 
+    kpilistselect2 = [
+    'updated_datetime', 'ticker'
+    ]
+
+    #change the column location / select the list of columns to be used
+    # df = df[['symbol','sector','currency','returnOnEquity','industry']]
+    df = df[kpilistselect2]
+
+    df = df.groupby(['updated_datetime']).count()#.sort_values('updated_datetime', ascending=False)
+
+    df = df.reset_index()
+
+    #this needs to be fixed, because there are no columns in gs
+    dflist = df.values.tolist()
+    dfcol = df.columns.tolist()
+
+    SERVICE_ACCOUNT_FILE = 'secret/googlesheetsapi-keys.json'
+    # If modifying these scopes, delete the file token.json.
+    SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
+    creds = service_account.Credentials.from_service_account_file(
+            SERVICE_ACCOUNT_FILE, scopes=SCOPES)
+    # The ID and range of a sample spreadsheet.
+    REQUIRED_SPREADSHEET_ID = '1_lobEzbiuP9TE2UZqmqSAwizT8f2oeuZ8mVuUTbBAsA'
+    service = build('sheets', 'v4', credentials=creds)
+    sheet = service.spreadsheets()
+    sheetinfo = "Datetime"
 
 
     #Inject the KPIS into the rows of the info
