@@ -6,11 +6,9 @@ import numpy as np
 import os.path
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
-from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from google.oauth2 import service_account
-import gspread
 import json
 import yfinance as yf
 from datetime import datetime, timedelta
@@ -18,7 +16,6 @@ from bs4 import BeautifulSoup
 import requests
 from firebase_admin import firestore
 import pandas as pd
-import plotly.express as px
 import time
 import pytz
 import re
@@ -37,3 +34,10 @@ db = firestore.Client.from_service_account_json("secret/serviceAccountKey.json")
 # if running on local - need to create secret / service manager / api key
 # https://cloud.google.com/docs/authentication/getting-started
 
+### bare minimum
+# pip install firebase-admin
+# pip install Flask
+# google-cloud-secret-manager
+# pip install pandas
+# pip install yfinance
+# pip install beautifulsoup4

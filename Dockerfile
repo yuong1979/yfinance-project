@@ -11,8 +11,6 @@ ENTRYPOINT [ "python3" ]
 
 CMD ["main.py"]
 
-
-
 # # For production
 # # Use the official lightweight Python image.
 # # https://hub.docker.com/_/python
