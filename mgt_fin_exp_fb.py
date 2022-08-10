@@ -6,7 +6,16 @@ from firebase_admin import firestore
 import yfinance as yf
 import pandas as pd
 import numpy as np
+from google.oauth2 import service_account
+import json
+from google.cloud.firestore import Client
+from secret import access_secret
 
+
+firestore_api_key = access_secret("firestore_api_key")
+firestore_api_key_dict = json.loads(firestore_api_key)
+fbcredentials = service_account.Credentials.from_service_account_info(firestore_api_key_dict)
+db = Client("python-firestore-52cfc", fbcredentials)
 
 
 # #################################################################################################
@@ -30,9 +39,6 @@ def extract_to_fb():
         else:
             currency_cleaned = currency
         return currency_cleaned
-
-
-    db = firestore.Client.from_service_account_json("secret/serviceAccountKey.json")
 
     tz_SG = pytz.timezone('Singapore')
     datetime_SG = datetime.now(tz_SG)
@@ -147,8 +153,6 @@ def extract_to_fb():
 # # ######## Daily Updating firebase finance info with yfinance - OLD VERSION ( REPLACED ) ########################
 # # ###############################################################################################################
 
-# db = firestore.Client.from_service_account_json("secret/serviceAccountKey.json")
-
 # tz_SG = pytz.timezone('Singapore')
 # datetime_SG = datetime.now(tz_SG)
 
@@ -162,7 +166,7 @@ def extract_to_fb():
 # print (len(tickerlist), "number of entries to update")
 
 # ###############################################################################################
-# ################### exclude below except when analyzing the data ##############################
+# ################### include below except when analyzing the data ##############################
 # ###############################################################################################
 # # datalist = []
 # # for i in tickerlist:

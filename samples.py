@@ -3,7 +3,6 @@ from sre_parse import State
 import yfinance as yf
 import pandas as pd
 import numpy as np
-
 import os.path
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
@@ -15,27 +14,26 @@ import gspread
 import json
 import yfinance as yf
 from datetime import datetime, timedelta
-
 from bs4 import BeautifulSoup
 import requests
-
 from firebase_admin import firestore
 import pandas as pd
 import plotly.express as px
 import time
 import pytz
 import re
-
 from dateutil.relativedelta import relativedelta
-
 from firebase_admin import firestore
-db = firestore.Client.from_service_account_json("secret/serviceAccountKey.json")
-
 import pytz
 import time
 
+db = firestore.Client.from_service_account_json("secret/serviceAccountKey.json")
 
 
+# export GOOGLE_APPLICATION_CREDENTIALS="/home/yuong/work/pyproj/Keys/access_fr_local.json"
 
-
+# secret manager - python tutorial
+# https://codelabs.developers.google.com/codelabs/secret-manager-python#8
+# if running on local - need to create secret / service manager / api key
+# https://cloud.google.com/docs/authentication/getting-started
 

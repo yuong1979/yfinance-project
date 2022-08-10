@@ -7,6 +7,25 @@ import numpy as np
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from datetime import datetime, timedelta
+import json
+from google.cloud.firestore import Client
+from secret import access_secret
+
+
+firestore_api_key = access_secret("firestore_api_key")
+firestore_api_key_dict = json.loads(firestore_api_key)
+fbcredentials = service_account.Credentials.from_service_account_info(firestore_api_key_dict)
+db = Client("python-firestore-52cfc", fbcredentials)
+
+google_sheets_api_key = access_secret("googlesheetsapikey")
+google_sheets_api_key_dict = json.loads(google_sheets_api_key)
+gscredentials = service_account.Credentials.from_service_account_info(google_sheets_api_key_dict)
+REQUIRED_SPREADSHEET_ID = '1_lobEzbiuP9TE2UZqmqSAwizT8f2oeuZ8mVuUTbBAsA'
+service = build('sheets', 'v4', credentials=gscredentials)
+sheet = service.spreadsheets()
+
+
+
 
 # ###############################################################################
 # ######## Daily Updating google sheets - ticker info with firebase #############
@@ -15,14 +34,10 @@ from datetime import datetime, timedelta
 ############### Running the function from the command line ###############
 # python -c 'from mgt_fin_exp_gs import extract_to_gs; extract_to_gs()'
 
-db = firestore.Client.from_service_account_json("secret/serviceAccountKey.json")
-
-
 def hour_rounder(t):
     # Rounds to nearest hour by adding a timedelta hour if minute >= 30
     return (t.replace(second=0, microsecond=0, minute=0, hour=t.hour)
                +timedelta(hours=t.minute//30))
-
 
 
 def extract_to_gs():
@@ -148,17 +163,7 @@ def extract_to_gs():
     dflist = df.values.tolist()
     dfcol = df.columns.tolist()
 
-    SERVICE_ACCOUNT_FILE = 'secret/googlesheetsapi-keys.json'
-    # If modifying these scopes, delete the file token.json.
-    SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
-    creds = service_account.Credentials.from_service_account_file(
-            SERVICE_ACCOUNT_FILE, scopes=SCOPES)
-    # The ID and range of a sample spreadsheet.
-    REQUIRED_SPREADSHEET_ID = '1_lobEzbiuP9TE2UZqmqSAwizT8f2oeuZ8mVuUTbBAsA'
-    service = build('sheets', 'v4', credentials=creds)
-    sheet = service.spreadsheets()
     sheetinfo = "Info"
-
 
     #Inject the KPIS into the rows of the info
     request = sheet.values().update(spreadsheetId=REQUIRED_SPREADSHEET_ID, 
@@ -198,6 +203,7 @@ def extract_date_time_to_gs():
         except KeyError:
             pass
 
+
     df = pd.DataFrame(datalist)
     df.replace(np.nan, '', inplace=True)
 
@@ -221,17 +227,7 @@ def extract_date_time_to_gs():
     dflist = df.values.tolist()
     dfcol = df.columns.tolist()
 
-    SERVICE_ACCOUNT_FILE = 'secret/googlesheetsapi-keys.json'
-    # If modifying these scopes, delete the file token.json.
-    SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
-    creds = service_account.Credentials.from_service_account_file(
-            SERVICE_ACCOUNT_FILE, scopes=SCOPES)
-    # The ID and range of a sample spreadsheet.
-    REQUIRED_SPREADSHEET_ID = '1_lobEzbiuP9TE2UZqmqSAwizT8f2oeuZ8mVuUTbBAsA'
-    service = build('sheets', 'v4', credentials=creds)
-    sheet = service.spreadsheets()
     sheetinfo = "Datetime"
-
 
     #Inject the KPIS into the rows of the info
     request = sheet.values().update(spreadsheetId=REQUIRED_SPREADSHEET_ID, 

@@ -1,18 +1,21 @@
-from secret import apikeys
-from firebase_admin import firestore
 import requests
 import time
 from datetime import datetime, timedelta
 import pytz
 import pandas as pd
 import numpy as np
+from secret import access_secret
+import json
+from google.oauth2 import service_account
+from google.cloud.firestore import Client
 
-# update fx values into firebase
 
-api_key = apikeys.alphavantage_api_key
+api_key = access_secret("alpha_vantage_api_key")
 
-db = firestore.Client.from_service_account_json("secret/serviceAccountKey.json")
-
+firestore_api_key = access_secret("firestore_api_key")
+firestore_api_key_dict = json.loads(firestore_api_key)
+fbcredentials = service_account.Credentials.from_service_account_info(firestore_api_key_dict)
+db = Client("python-firestore-52cfc", fbcredentials)
 
 # upload fx to firebase
 fx_list = [

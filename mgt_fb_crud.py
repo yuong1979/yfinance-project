@@ -8,13 +8,19 @@ import yfinance as yf
 import pandas as pd
 import numpy as np
 import timeit
+import json
+from google.oauth2 import service_account
+from google.cloud.firestore import Client
+from secret import access_secret
 
-
+firestore_api_key = access_secret("firestore_api_key")
+firestore_api_key_dict = json.loads(firestore_api_key)
+fbcredentials = service_account.Credentials.from_service_account_info(firestore_api_key_dict)
+db = Client("python-firestore-52cfc", fbcredentials)
 
 # ##################################################################################################
 # ######### Updating tickerlist from companiesmarketcap.com into firebase ##########################
 # ##################################################################################################
-# db = firestore.Client.from_service_account_json("secret/serviceAccountKey.json")
 
 # #updating the tickerlist by checking if all the tickers in companiesmarketcap is updated.
 # #if not it will copy the ticker to firebase collection - tickerlist
@@ -154,49 +160,194 @@ import timeit
 
 
 
-# ######################################################################################
-# ####### Migrating the testing ticker data to tickerdatatest ##########################
-# ######################################################################################
+######################################################################################
+####### Migrating the testing ticker data to tickerdatatest ##########################
+######################################################################################
 
-# tickerlist = db.collection('tickerlist').limit(50).get()
+############## Running the function from the command line ###############
+# python -c 'from mgt_fb_crud import migrate_to_test; migrate_to_test()'
 
-# for i in tickerlist:
+def migrate_to_test():
 
-#     ticker = i._data['ticker']
-#     activated = i._data['activated']
-#     created_datetime = i._data['created_datetime']
-#     ebitdaUSD = i._data['ebitdaUSD']
-#     enterpriseValueUSD = i._data['enterpriseValueUSD']
-#     freeCashflowUSD = i._data['freeCashflowUSD']
-#     grossProfitsUSD = i._data['grossProfitsUSD']
-#     kpi = i._data['kpi']
-#     marketCapUSD = i._data['marketCapUSD']
-#     operatingCashflowUSD = i._data['operatingCashflowUSD']
-#     tickername = i._data['tickername']
-#     totalDebtUSD = i._data['totalDebtUSD']
-#     totalRevenueUSD = i._data['totalRevenueUSD']
-#     updated_datetime = i._data['updated_datetime']
+    tickerlist = db.collection('tickerlist').limit(200).get()
 
-#     data = {
+    for i in tickerlist:
 
-#         'ticker': ticker,
-#         'activated': activated,
-#         "created_datetime": created_datetime,
-#         "ebitdaUSD": ebitdaUSD,
-#         "enterpriseValueUSD": enterpriseValueUSD,
-#         "grossProfitsUSD": grossProfitsUSD,
-#         "kpi": kpi,
-#         "marketCapUSD": marketCapUSD,
-#         "operatingCashflowUSD": operatingCashflowUSD,
-#         "tickername": tickername,
-#         "totalDebtUSD": totalDebtUSD,
-#         "totalRevenueUSD": totalRevenueUSD,
-#         "updated_datetime": updated_datetime
-#     }
+        ticker = i._data['ticker']
+        activated = i._data['activated']
+        created_datetime = i._data['created_datetime']
+        ebitdaUSD = i._data['ebitdaUSD']
+        enterpriseValueUSD = i._data['enterpriseValueUSD']
+        freeCashflowUSD = i._data['freeCashflowUSD']
+        grossProfitsUSD = i._data['grossProfitsUSD']
+        kpi = i._data['kpi']
+        marketCapUSD = i._data['marketCapUSD']
+        operatingCashflowUSD = i._data['operatingCashflowUSD']
+        tickername = i._data['tickername']
+        totalDebtUSD = i._data['totalDebtUSD']
+        totalRevenueUSD = i._data['totalRevenueUSD']
+        updated_datetime = i._data['updated_datetime']
 
-#     db.collection('tickerlisttest').document(i.id).set(data, merge=True)
+        data = {
+
+            'ticker': ticker,
+            'activated': activated,
+            "created_datetime": created_datetime,
+            "ebitdaUSD": ebitdaUSD,
+            "enterpriseValueUSD": enterpriseValueUSD,
+            "freeCashflowUSD": freeCashflowUSD,
+            "grossProfitsUSD": grossProfitsUSD,
+            "kpi": kpi,
+            "marketCapUSD": marketCapUSD,
+            "operatingCashflowUSD": operatingCashflowUSD,
+            "tickername": tickername,
+            "totalDebtUSD": totalDebtUSD,
+            "totalRevenueUSD": totalRevenueUSD,
+            "updated_datetime": updated_datetime
+        }
+
+        db.collection('tickerlisttest').document(i.id).set(data, merge=True)
 
 
+
+######################################################################################
+####### Investigation ################################################################
+######################################################################################
+
+############## Running the function from the command line ###############
+# python -c 'from mgt_fb_crud import ticker_investigation; ticker_investigation()'
+
+ticker = 'SSTK'
+
+def ticker_investigation():
+    docs = db.collection('tickerlisttest').where("ticker", "==", ticker).get()
+
+    print(docs[0]._data['kpi'])
+
+
+
+######################################################################################
+####### Pivoting the data into formats that are interesting ##########################
+######################################################################################
+
+############## Running the function from the command line ###############
+# python -c 'from mgt_fb_crud import pivot_data; pivot_data()'
+
+
+#DESCENDING
+
+def pivot_data():
+    docs = db.collection('tickerlisttest').order_by("updated_datetime", direction=firestore.Query.DESCENDING).get()
+    datalist = []
+    for i in docs:
+        print (i._data['ticker'])
+
+        data = {}
+        data["ticker"] = i._data['ticker']
+
+        try:
+            data["industry"] = i._data['kpi']['industry']
+        except:
+            data["industry"] = ""
+
+        try:
+            data["sector"] = i._data['kpi']['sector']
+        except:
+            data["sector"] = ""
+
+        try:
+            data["country"] = i._data['kpi']['country']
+        except:
+            data["country"] = ""
+
+        try:
+            data["city"] = i._data['kpi']['city']
+        except:
+            data["city"] = ""
+
+        try:
+            data["marketCapUSD"] = i._data['marketCapUSD']
+        except:
+            data["marketCapUSD"] = 0
+
+        try:
+            data["enterpriseValueUSD"] = i._data['enterpriseValueUSD']
+        except:
+            data["enterpriseValueUSD"] = 0
+
+        try:
+            data["freeCashflowUSD"] = i._data['freeCashflowUSD']
+        except:
+            data["freeCashflowUSD"] = 0
+
+        try:
+            data["operatingCashflowUSD"] = i._data['operatingCashflowUSD']
+        except:
+            data["operatingCashflowUSD"] = 0
+
+        try:
+            data["currentPriceUSD"] = i._data['currentPriceUSD']
+        except:
+            data["currentPriceUSD"] = 0
+
+        try:
+            data["totalRevenueUSD"] = i._data['totalRevenueUSD']
+        except:
+            data["totalRevenueUSD"] = 0
+
+        try:
+            data["grossProfitsUSD"] = i._data['grossProfitsUSD']
+        except:
+            data["grossProfitsUSD"] = 0
+
+        try:
+            data["ebitdaUSD"] = i._data['ebitdaUSD']
+        except:
+            data["ebitdaUSD"] = 0
+
+
+
+        datalist.append(data)
+
+    df = pd.DataFrame(datalist)
+    df.replace(np.nan, '', inplace=True)
+
+    # ## Selected KPIs including usd values 
+    # kpilistselect2 = [
+    # 'industry','sector','ticker'
+    # ]
+
+    # df = df[kpilistselect2]
+    # df = df.groupby(['industry','sector']).count() #.sort_values('updated_datetime', ascending=False)
+    # df = df.reset_index()
+    # print (df)
+
+
+    kpilistselect2 = [
+    'country','city', 'industry','sector','ticker', 'marketCapUSD'
+    ]
+    df = df[kpilistselect2].head(50)
+
+ 
+
+    # print (df)
+    # companyinfo = df[df['ticker'] == "MDV"]
+    # companymktcap = companyinfo['marketCap'].values
+    # print (companymktcap)
+    # print (companymktcap[0])
+    # print (type(companymktcap[0]))
+
+    # no_companies_df = df.groupby(['industry','sector'])['ticker'].count() #.sort_values('updated_datetime', ascending=False)
+    # no_companies_df = no_companies_df.reset_index()
+    # print (no_companies_df)
+
+    # sum_mkt_cap_df = df.groupby(['industry','sector'])['marketCap'].sum() #.sort_values('updated_datetime', ascending=False)
+    # sum_mkt_cap_df = sum_mkt_cap_df.reset_index()
+    # print (sum_mkt_cap_df)
+
+    sum_country_mkt_cap_df = df.groupby(['country','city'])['marketCapUSD'].sum() #.sort_values('updated_datetime', ascending=False)
+    sum_country_mkt_cap_df = sum_country_mkt_cap_df.reset_index()
+    print (sum_country_mkt_cap_df)
 
 
 
@@ -223,19 +374,5 @@ import timeit
 
 
 
-##############################################################
-######## Adding data to firebase #############################
-##############################################################
 
-# # reference for updating tickerlist
-# testlist = ['apple', 'facebook', 'google', 'netflix']
-
-# for i in testlist:
-#     if not db.collection('tickerlisttest').where("ticker", "==", i).get():
-#         data={'ticker': i, 'activated': True}
-#         db.collection('tickerlisttest').add(data)
-#         print (i + " has been added")
-#     else:
-#         print (i + " is already included")
-#         pass
 
