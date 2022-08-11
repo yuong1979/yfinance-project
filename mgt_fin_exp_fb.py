@@ -43,12 +43,12 @@ def extract_to_fb():
     tz_SG = pytz.timezone('Singapore')
     datetime_SG = datetime.now(tz_SG)
 
-    hoursbeforeextract = 48
+    hoursbeforeextract = 24
     secb4extract = hoursbeforeextract * 60 * 60
 
     target_datetime = datetime_SG - timedelta(seconds=secb4extract)
 
-    # if what is on record is updated less than 23(hoursbeforeextract) hours ago, we need to get the record for update
+    # if what is on record is updated less than 24(hoursbeforeextract) hours ago, we need to get the record for update
     tickerlist = db.collection('tickerlist').where('updated_datetime', '<=', target_datetime).order_by("updated_datetime", direction=firestore.Query.ASCENDING).get()
     print (len(tickerlist), "number of entries to update")
 
