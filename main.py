@@ -13,8 +13,8 @@ port = 5000
 
 # test = access_secret("my_secret_value")
 # print (test)
-cloud_run_apikey = access_secret("cloud_run_apikey")
-firestore_api_key = access_secret("firestore_api_key")
+cloud_run_apikey = access_secret("blockmacro_schedule_function_key")
+firestore_api_key = access_secret("blockmacro_firebase_db")
 firestore_api_key_dict = json.loads(firestore_api_key)
 # local_key = 'secret/serviceAccountKey.json'
 

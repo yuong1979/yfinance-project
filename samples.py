@@ -26,42 +26,10 @@ import time
 from secret import access_secret
 from google.cloud.firestore import Client
 
-# db = firestore.Client.from_service_account_json("secret/serviceAccountKey.json")
-
-print ('hello')
+# db = firestore.Client.from_service_account_json("secret/serviceAccountKey.json"
 
 
-### Testing connection to firebase database
-firestore_api_key = access_secret("firestore_api_key")
-firestore_api_key_dict = json.loads(firestore_api_key)
-fbcredentials = service_account.Credentials.from_service_account_info(firestore_api_key_dict)
-db = Client("python-firestore-52cfc", fbcredentials)
-docs = db.collection('fx').where("currency", "==", "JPY").get()[0]
-print(docs._data['rate'])
-
-### Testing connection to google sheets
-google_sheets_api_key = access_secret("googlesheetsapikey")
-google_sheets_api_key_dict = json.loads(google_sheets_api_key)
-gscredentials = service_account.Credentials.from_service_account_info(google_sheets_api_key_dict)
-REQUIRED_SPREADSHEET_ID = '1_lobEzbiuP9TE2UZqmqSAwizT8f2oeuZ8mVuUTbBAsA'
-service = build('sheets', 'v4', credentials=gscredentials)
-sheet = service.spreadsheets()
-sheetinfo = "Sheet1"
-result = sheet.values().get(spreadsheetId=REQUIRED_SPREADSHEET_ID, 
-    range=sheetinfo+"!A2").execute()
-values = result.get('values', [])
-print (values)
-
-### Testing connection to alpha vantage
-alphavantage_api_key = access_secret("alpha_vantage_api_key")
-print (alphavantage_api_key)
-
-# ### Testing connection to my secret value
-# my_secret_value = access_secret("my_secret_value")
-# print (my_secret_value)
-
-
-# export GOOGLE_APPLICATION_CREDENTIALS="/home/yuong/work/pyproj/Keys/access_fr_local.json"
+# export GOOGLE_APPLICATION_CREDENTIALS="/home/yuong/work/pyproj/Keys/blockmacro_local_access.json"
 
 # secret manager - python tutorial
 # https://codelabs.developers.google.com/codelabs/secret-manager-python#8

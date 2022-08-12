@@ -10,9 +10,9 @@ from google.oauth2 import service_account
 from google.cloud.firestore import Client
 
 
-api_key = access_secret("alpha_vantage_api_key")
+api_key = access_secret("blockmacro_alpha_vantage_api")
 
-firestore_api_key = access_secret("firestore_api_key")
+firestore_api_key = access_secret("blockmacro_firebase_db")
 firestore_api_key_dict = json.loads(firestore_api_key)
 fbcredentials = service_account.Credentials.from_service_account_info(firestore_api_key_dict)
 db = Client("python-firestore-52cfc", fbcredentials)
