@@ -29,7 +29,9 @@ from google.cloud.firestore import Client
 # db = firestore.Client.from_service_account_json("secret/serviceAccountKey.json"
 
 
+### Run the below first if running on local to connect to secret manager on google cloud
 # export GOOGLE_APPLICATION_CREDENTIALS="/home/yuong/work/pyproj/Keys/blockmacro_local_access.json"
+
 
 # secret manager - python tutorial
 # https://codelabs.developers.google.com/codelabs/secret-manager-python#8

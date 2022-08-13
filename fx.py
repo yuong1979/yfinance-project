@@ -9,13 +9,16 @@ import json
 from google.oauth2 import service_account
 from google.cloud.firestore import Client
 
+### Run the below first if running on local to connect to secret manager on google cloud
+# export GOOGLE_APPLICATION_CREDENTIALS="/home/yuong/work/pyproj/Keys/blockmacro_local_access.json"
 
+firebase_database = "blockmacro-7b611"
+# firebase_database = "python-firestore-52cfc"
 api_key = access_secret("blockmacro_alpha_vantage_api")
-
 firestore_api_key = access_secret("blockmacro_firebase_db")
 firestore_api_key_dict = json.loads(firestore_api_key)
 fbcredentials = service_account.Credentials.from_service_account_info(firestore_api_key_dict)
-db = Client("python-firestore-52cfc", fbcredentials)
+db = Client(firebase_database, fbcredentials)
 
 # upload fx to firebase
 fx_list = [

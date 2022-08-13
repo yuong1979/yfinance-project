@@ -11,12 +11,14 @@ app = Flask(__name__)
 
 port = 5000
 
-# test = access_secret("my_secret_value")
-# print (test)
+
+
+### Run the below first if running on local to connect to secret manager on google cloud
+# export GOOGLE_APPLICATION_CREDENTIALS="/home/yuong/work/pyproj/Keys/blockmacro_local_access.json"
+
 cloud_run_apikey = access_secret("blockmacro_schedule_function_key")
 firestore_api_key = access_secret("blockmacro_firebase_db")
 firestore_api_key_dict = json.loads(firestore_api_key)
-# local_key = 'secret/serviceAccountKey.json'
 
 # Initialize Firestore DB
 cred = credentials.Certificate(firestore_api_key_dict)
