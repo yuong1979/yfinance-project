@@ -10,19 +10,14 @@ from datetime import datetime, timedelta
 import json
 from google.cloud.firestore import Client
 from secret import access_secret
+from settings import project_id, firebase_database, fx_api_key, firestore_api_key, google_sheets_api_key, schedule_function_key
 
-
-### Run the below first if running on local to connect to secret manager on google cloud
-# export GOOGLE_APPLICATION_CREDENTIALS="/home/yuong/work/pyproj/Keys/blockmacro_local_access.json"
-
-firebase_database = "blockmacro-7b611"
-# firebase_database = "python-firestore-52cfc"
-firestore_api_key = access_secret("blockmacro_firebase_db")
+firestore_api_key = access_secret(firestore_api_key, project_id)
 firestore_api_key_dict = json.loads(firestore_api_key)
 fbcredentials = service_account.Credentials.from_service_account_info(firestore_api_key_dict)
 db = Client(firebase_database, fbcredentials)
 
-google_sheets_api_key = access_secret("blockmacro_googlesheets")
+google_sheets_api_key = access_secret(google_sheets_api_key, project_id)
 google_sheets_api_key_dict = json.loads(google_sheets_api_key)
 gscredentials = service_account.Credentials.from_service_account_info(google_sheets_api_key_dict)
 REQUIRED_SPREADSHEET_ID = '1_lobEzbiuP9TE2UZqmqSAwizT8f2oeuZ8mVuUTbBAsA'

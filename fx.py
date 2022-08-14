@@ -8,14 +8,10 @@ from secret import access_secret
 import json
 from google.oauth2 import service_account
 from google.cloud.firestore import Client
+from settings import project_id, firebase_database, fx_api_key, firestore_api_key, google_sheets_api_key, schedule_function_key
 
-### Run the below first if running on local to connect to secret manager on google cloud
-# export GOOGLE_APPLICATION_CREDENTIALS="/home/yuong/work/pyproj/Keys/blockmacro_local_access.json"
-
-firebase_database = "blockmacro-7b611"
-# firebase_database = "python-firestore-52cfc"
-api_key = access_secret("blockmacro_alpha_vantage_api")
-firestore_api_key = access_secret("blockmacro_firebase_db")
+fx_api_key = access_secret(fx_api_key, project_id)
+firestore_api_key = access_secret(firestore_api_key, project_id)
 firestore_api_key_dict = json.loads(firestore_api_key)
 fbcredentials = service_account.Credentials.from_service_account_info(firestore_api_key_dict)
 db = Client(firebase_database, fbcredentials)
@@ -45,7 +41,7 @@ def extract_fx():
         key = doc.id
         currency = doc._data["currency"]
         try:
-            r = requests.get('https://www.alphavantage.co/query?function=CURRENCY_EXCHANGE_RATE&from_currency=USD&to_currency='+currency+'&apikey=' + api_key)
+            r = requests.get('https://www.alphavantage.co/query?function=CURRENCY_EXCHANGE_RATE&from_currency=USD&to_currency='+currency+'&apikey=' + fx_api_key)
             dataobj = r.json()
             rate = dataobj['Realtime Currency Exchange Rate']['5. Exchange Rate']
             data = {"rate": rate, "updated_datetime": datetime_SG}
@@ -59,6 +55,7 @@ def extract_fx():
             print (currency, " is skipped because of " + str(e))
     #sleep is at 20 seconds because it will pop errors if limits are breached
         time.sleep(20)
+
 
 # #######################################################################################################
 # ########################## Exporting the currency rates on csv for analysis ###########################

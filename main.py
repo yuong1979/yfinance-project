@@ -5,19 +5,17 @@ from fx import extract_fx
 from mgt_fin_exp_gs import extract_to_gs
 from secret import access_secret
 import json
-
+from settings import project_id, firebase_database, fx_api_key, firestore_api_key, google_sheets_api_key, schedule_function_key
 
 app = Flask(__name__)
 
 port = 5000
 
-
-
 ### Run the below first if running on local to connect to secret manager on google cloud
 # export GOOGLE_APPLICATION_CREDENTIALS="/home/yuong/work/pyproj/Keys/blockmacro_local_access.json"
 
-cloud_run_apikey = access_secret("blockmacro_schedule_function_key")
-firestore_api_key = access_secret("blockmacro_firebase_db")
+cloud_run_apikey = access_secret(schedule_function_key, project_id)
+firestore_api_key = access_secret(firestore_api_key, project_id)
 firestore_api_key_dict = json.loads(firestore_api_key)
 
 # Initialize Firestore DB
