@@ -33,12 +33,12 @@
 # https://youtu.be/JIE89dneaGo
 
 ######## PRODUCTION DATABASE ########
-# gcloud builds submit --tag gcr.io/blockmacro-7b611/flaskapp --project=blockmacro-7b611
-# gcloud run deploy flaskapp --image gcr.io/blockmacro-7b611/flaskapp --platform managed --project=blockmacro-7b611 --allow-unauthenticated --region us-east1
+# gcloud builds submit --tag gcr.io/blockmacro-7b611/flaskapp_prod --project=blockmacro-7b611
+# gcloud run deploy flaskapp_prod --image gcr.io/blockmacro-7b611/flaskapp_prod --platform managed --project=blockmacro-7b611 --allow-unauthenticated --region us-east1
 
 ######## TESTING DATABASE ########
-# gcloud builds submit --tag gcr.io/testing-33c79/flaskapp --project=testing-33c79
-# gcloud run deploy flaskapp --image gcr.io/testing-33c79/flaskapp --platform managed --project=testing-33c79 --allow-unauthenticated --region us-east1
+# gcloud builds submit --tag gcr.io/testing-33c79/flaskapp_test --project=testing-33c79
+# gcloud run deploy flaskapp_test --image gcr.io/testing-33c79/flaskapp_test --platform managed --project=testing-33c79 --allow-unauthenticated --region us-east1
 
 FROM python:3.8
 
