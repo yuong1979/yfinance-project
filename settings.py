@@ -1,7 +1,5 @@
-
-
-project = "test"
-# project = "dev"
+# project = "test"
+project = "dev"
 
 if project == "test":
 
@@ -12,6 +10,7 @@ if project == "test":
     firestore_api_key = "test_firebase_db"
     google_sheets_api_key = "test_googlesheets"
     schedule_function_key = "test_schedule_function_key"
+    firebase_auth_api_key = "test_firebase_auth"
 
 else:
 
@@ -22,5 +21,4 @@ else:
     firestore_api_key = "blockmacro_firebase_db"
     google_sheets_api_key = "blockmacro_googlesheets"
     schedule_function_key = "blockmacro_schedule_function_key"
-
-
+    firebase_auth_api_key = "blockmacro_firebase_auth"

@@ -8,7 +8,7 @@ from secret import access_secret
 import json
 from google.oauth2 import service_account
 from google.cloud.firestore import Client
-from settings import project_id, firebase_database, fx_api_key, firestore_api_key, google_sheets_api_key, schedule_function_key
+from settings import project_id, firebase_database, fx_api_key, firestore_api_key, google_sheets_api_key, schedule_function_key, firebase_auth_api_key
 
 fx_api_key = access_secret(fx_api_key, project_id)
 firestore_api_key = access_secret(firestore_api_key, project_id)

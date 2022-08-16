@@ -5,7 +5,7 @@ from fx import extract_fx
 from mgt_fin_exp_gs import extract_to_gs
 from secret import access_secret
 import json
-from settings import project_id, firebase_database, fx_api_key, firestore_api_key, google_sheets_api_key, schedule_function_key
+from settings import project_id, firebase_database, fx_api_key, firestore_api_key, google_sheets_api_key, schedule_function_key, firebase_auth_api_key
 
 app = Flask(__name__)
 

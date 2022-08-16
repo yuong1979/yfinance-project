@@ -12,7 +12,7 @@ import json
 from google.oauth2 import service_account
 from google.cloud.firestore import Client
 from secret import access_secret
-from settings import project_id, firebase_database, fx_api_key, firestore_api_key, google_sheets_api_key, schedule_function_key
+from settings import project_id, firebase_database, fx_api_key, firestore_api_key, google_sheets_api_key, schedule_function_key, firebase_auth_api_key
 
 firestore_api_key = access_secret(firestore_api_key, project_id)
 firestore_api_key_dict = json.loads(firestore_api_key)
@@ -218,10 +218,11 @@ def migrate_to_test():
 ############## Running the function from the command line ###############
 # python -c 'from mgt_fb_crud import ticker_investigation; ticker_investigation()'
 
-ticker = 'SSTK'
+ticker = 'DELHIVERY.NS'
 
 def ticker_investigation():
-    docs = db.collection('tickerlisttest').where("ticker", "==", ticker).get()
+    docs = db.collection('tickerlist').where("ticker", "==", ticker).get()
+
 
     print(docs[0]._data['kpi'])
 

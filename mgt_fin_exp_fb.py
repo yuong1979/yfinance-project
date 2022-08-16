@@ -10,7 +10,7 @@ from google.oauth2 import service_account
 import json
 from google.cloud.firestore import Client
 from secret import access_secret
-from settings import project_id, firebase_database, fx_api_key, firestore_api_key, google_sheets_api_key, schedule_function_key
+from settings import project_id, firebase_database, fx_api_key, firestore_api_key, google_sheets_api_key, schedule_function_key, firebase_auth_api_key
 
 firestore_api_key = access_secret(firestore_api_key, project_id)
 firestore_api_key_dict = json.loads(firestore_api_key)
@@ -65,12 +65,19 @@ def extract_to_fb():
         try:
             # print (i._data['kpi']["currency"])
             currency_to_cln = i._data['kpi']["currency"]
+            print ("currency extracted ok")
+            print ("the currency extracted is ", currency_to_cln)
             #converting currency from yfinance into correct currency that can be found in alpha vantage
             currency = currencyclean(currency_to_cln)
+            print ("currency clean ok")
             docs = db.collection('fx').where("currency", "==", currency).get()[0]
+            print ("currency type retrieved from fx db is",  docs.to_dict())
             rate = docs.to_dict()['rate']
             #convert string to float
+            print (rate, "is the rate and it is type is ", type(rate))
+            print ("currency rate retrieved ok")
             rate = float(rate)
+            print ("currency rate converted ok")
         except KeyError:
             rate = ""
 
