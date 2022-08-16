@@ -59,3 +59,10 @@ if __name__ == "__main__":
     app.run(debug=True, host='0.0.0.0', port=port)
 
 
+
+# @app.get("/")
+# def home():
+#     return render_template("base_test.html")
+
+# if __name__ == "__main__":
+#     app.run(debug=True, host='0.0.0.0', port=port)

@@ -1,5 +1,5 @@
-# project = "test"
-project = "dev"
+project = "test"
+# project = "dev"
 
 if project == "test":
 
