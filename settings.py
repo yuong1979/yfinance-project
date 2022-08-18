@@ -11,6 +11,7 @@ if project == "test":
     google_sheets_api_key = "test_googlesheets"
     schedule_function_key = "test_schedule_function_key"
     firebase_auth_api_key = "test_firebase_auth"
+    email_password = "test_email_password"
 
 else:
 
@@ -22,3 +23,4 @@ else:
     google_sheets_api_key = "blockmacro_googlesheets"
     schedule_function_key = "blockmacro_schedule_function_key"
     firebase_auth_api_key = "blockmacro_firebase_auth"
+    email_password = "blockmacro_email_password"

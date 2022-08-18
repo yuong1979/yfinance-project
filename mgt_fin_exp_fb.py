@@ -11,11 +11,27 @@ import json
 from google.cloud.firestore import Client
 from secret import access_secret
 from settings import project_id, firebase_database, fx_api_key, firestore_api_key, google_sheets_api_key, schedule_function_key, firebase_auth_api_key
+from email_function import error_email
+import inspect
+
 
 firestore_api_key = access_secret(firestore_api_key, project_id)
 firestore_api_key_dict = json.loads(firestore_api_key)
 fbcredentials = service_account.Credentials.from_service_account_info(firestore_api_key_dict)
 db = Client(firebase_database, fbcredentials)
+
+
+
+def currencyclean(currency):
+    if currency == "GBp":
+        currency_cleaned = "GBP"
+    elif currency == "ZAc":
+        currency_cleaned = "ZAR"
+    elif currency == "ILA":
+        currency_cleaned = "ILS"
+    else:
+        currency_cleaned = currency
+    return currency_cleaned
 
 
 # #################################################################################################
@@ -24,133 +40,121 @@ db = Client(firebase_database, fbcredentials)
 # #################################################################################################
 
 ############### Running the function from the command line ###############
-# python -c 'from mgt_fin_exp_fb import extract_to_fb; extract_to_fb()'
+# python -c 'from mgt_fin_exp_fb import ext_daily_equity_financials_yf_fb; ext_daily_equity_financials_yf_fb()'
 
-def extract_to_fb():
+def ext_daily_equity_financials_yf_fb():
 
-    #converting currency from yfinance into correct currency that can be found in alpha vantage
-    def currencyclean(currency):
-        if currency == "GBp":
-            currency_cleaned = "GBP"
-        elif currency == "ZAc":
-            currency_cleaned = "ZAR"
-        elif currency == "ILA":
-            currency_cleaned = "ILS"
-        else:
-            currency_cleaned = currency
-        return currency_cleaned
+    #check if the document in the collections latest date extracted is > 30 seconds ago, if so to exit(), if not proceed to run
+    tz_UTC = pytz.timezone('UTC')
+    time_seconds = 30
+    latest_entry = db.collection('tickerlist').order_by("updated_datetime", direction=firestore.Query.DESCENDING).limit(1).get()
+    timedelta = datetime.now(tz_UTC) - latest_entry[0]._data['updated_datetime']
 
-    tz_SG = pytz.timezone('Singapore')
-    datetime_SG = datetime.now(tz_SG)
+    if timedelta.seconds < time_seconds:
+        print ('exit')
+        exit()
 
-    hoursbeforeextract = 24
-    secb4extract = hoursbeforeextract * 60 * 60
+    try:
 
-    target_datetime = datetime_SG - timedelta(seconds=secb4extract)
+        #converting currency from yfinance into correct currency that can be found in alpha vantage
+        tz_SG = pytz.timezone('Singapore')
+        datetime_SG = datetime.now(tz_SG)
 
-    # if what is on record is updated less than 24(hoursbeforeextract) hours ago, we need to get the record for update
-    tickerlist = db.collection('tickerlist').where('updated_datetime', '<=', target_datetime).order_by("updated_datetime", direction=firestore.Query.ASCENDING).get()
-    print (len(tickerlist), "number of entries to update")
+        hoursbeforeextract = 24
+        secb4extract = hoursbeforeextract * 60 * 60
+
+        target_datetime = datetime_SG - timedelta(seconds=secb4extract)
+
+        # if what is on record is updated less than 24(hoursbeforeextract) hours ago, we need to get the record for update
+        tickerlist = db.collection('tickerlist').where('updated_datetime', '<=', target_datetime).order_by("updated_datetime", direction=firestore.Query.ASCENDING).get()
+        print (len(tickerlist), "number of entries to update")
 
 
-    for i in tickerlist:
-        print ("Updating " + str(i._data['ticker']))
-        # print ("Last time updated is " + str(i._data['updated_datetime']))
-        recordtime = datetime.now(tz_SG)
-        time.sleep(1)
-        ticker = i._data['ticker']
-        updated_time = i._data['updated_datetime']
-        companyinfo = yf.Ticker(ticker)
+        for i in tickerlist:
+            print ("Updating " + str(i._data['ticker']))
+            # print ("Last time updated is " + str(i._data['updated_datetime']))
+            recordtime = datetime.now(tz_SG)
+            #fx is updated one day late - and you have to make sure that the FX is extracted at 12 everyday
+            fx_extract_time = recordtime - timedelta(days=1)
 
-        try:
-            # print (i._data['kpi']["currency"])
-            currency_to_cln = i._data['kpi']["currency"]
-            print ("currency extracted ok")
-            print ("the currency extracted is ", currency_to_cln)
-            #converting currency from yfinance into correct currency that can be found in alpha vantage
-            currency = currencyclean(currency_to_cln)
-            print ("currency clean ok")
-            docs = db.collection('fx').where("currency", "==", currency).get()[0]
-            print ("currency type retrieved from fx db is",  docs.to_dict())
-            rate = docs.to_dict()['rate']
-            #convert string to float
-            print (rate, "is the rate and it is type is ", type(rate))
-            print ("currency rate retrieved ok")
-            rate = float(rate)
-            print ("currency rate converted ok")
-        except KeyError:
-            rate = ""
+            # print (fx_extract_time)
+            time.sleep(1)
+            ticker = i._data['ticker']
+            # print (ticker, "ticker to be extracted")
+            # updated_time = i._data['updated_datetime']
+            companyinfo = yf.Ticker(ticker)
 
-        except Exception as e:
-            print (e)
+            data = {
+                'kpi': companyinfo.info,
+                'updated_datetime': recordtime,
+                'activated': True
+            }
 
-        key = i.id
+            try:
+                i._data['kpi']["currency"]
+            except KeyError:
+                db.collection('tickerlist').document(i.id).set(data, merge=True)
+                rate = 0
+                print ("rates are zero so just record company info without recording usd amounts")
+            else:
+                currency_required = i._data['kpi']["currency"]
+                # print ("the currency extracted is ", currency_required)
+                #converting currency from yfinance into correct currency that can be found in FX table
+                currency_required = currencyclean(currency_required)
 
-        try:
-            marketCapUSD = i._data['kpi']["marketCap"] * rate
-        except Exception as e:
-            marketCapUSD = ""
+                # print ("the currency converted is ", currency_required)
+                fx_date_str = fx_extract_time.strftime("%Y-%m-%d")
+                print ("the date extracted from fxhistorial is ", fx_date_str)
+                # Lookingup the fx rates to get rates
+                docs = db.collection('fxhistorical').document(fx_date_str).get()
+                # print ("currency type retrieved from fx db is",  docs.to_dict())
 
-        try:
-            enterpriseValueUSD = i._data['kpi']["enterpriseValue"] * rate
-        except Exception as e:
-            enterpriseValueUSD = ""
+                # we need to make sure that FX is extracted on the specific before this - if not this will not work 
+                rate = docs._data["currencyrates"][currency_required]
+                #convert string to float
+                # print (rate, "is the rate and it is type is ", type(rate))
+                rate = float(rate)
+                # print (rate)
 
-        try:
-            freeCashflowUSD = i._data['kpi']["freeCashflow"] * rate
-        except Exception as e:
-            freeCashflowUSD = ""
 
-        try:
-            operatingCashflowUSD = i._data['kpi']["operatingCashflow"] * rate
-        except Exception as e:
-            operatingCashflowUSD = ""
-            
-        try:
-            totalDebtUSD = i._data['kpi']["totalDebt"] * rate
-        except Exception as e:
-            totalDebtUSD = ""
-            
-        try:
-            totalRevenueUSD = i._data['kpi']["totalRevenue"] * rate
-        except Exception as e:
-            totalRevenueUSD = ""
-            
-        try:
-            grossProfitsUSD = i._data['kpi']["grossProfits"] * rate
-        except Exception as e:
-            grossProfitsUSD = ""
-            
-        try:
-            ebitdaUSD = i._data['kpi']["ebitda"] * rate
-        except Exception as e:
-            ebitdaUSD = ""
+            kpilist = ['marketCap', 'enterpriseValue', 'freeCashflow', 'operatingCashflow', 
+                    'totalDebt', 'totalRevenue', 'grossProfits', 'ebitda', 'currentPrice']
 
-        try:
-            currentPriceUSD = i._data['kpi']["currentPrice"] * rate
-        except Exception as e:
-            currentPriceUSD = "" 
+            kpi_dict = {}
+            for j in kpilist:
+                try:
+                    kpi_in_USD = i._data['kpi'][j] * rate
+                except Exception as e:
+                    #if there is no kpi than replace with ""
+                    kpi_in_USD = ""
 
-        data = {
+                kpi_name_in_USD = j + "USD"
+                kpi_dict[kpi_name_in_USD] = kpi_in_USD
 
-            'kpi': companyinfo.info,
-            'updated_datetime': recordtime,
-            'activated': True,
+            data.update(kpi_dict)
 
-            "marketCapUSD": marketCapUSD,
-            "enterpriseValueUSD": enterpriseValueUSD,
-            "freeCashflowUSD": freeCashflowUSD,
-            "operatingCashflowUSD": operatingCashflowUSD,
-            "totalDebtUSD": totalDebtUSD,
-            "totalRevenueUSD": totalRevenueUSD,
-            "grossProfitsUSD": grossProfitsUSD,
-            "ebitdaUSD": ebitdaUSD,
-            "currentPriceUSD": currentPriceUSD
-        }
+            #updating data into firebase
+            db.collection('tickerlist').document(i.id).set(data, merge=True)
+            print ("Updated " + str(i._data['ticker']))
 
-        #updating data into firebase
-        db.collection('tickerlist').document(i.id).set(data, merge=True)
-        print ("Updated " + str(i._data['ticker']))
+
+    except Exception as e:
+        print (e)
+        file_name = __name__
+        function_name = inspect.currentframe().f_code.co_name
+        subject = "Error on macrokpi project"
+        content = "Error in File name: " + str(file_name) + "\n Function: " + str(function_name) + "\n Detailed error: " + str(e)
+        error_email(subject, content)
+
+
+
+
+
+
+
+
+
+
 
 
 

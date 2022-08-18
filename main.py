@@ -1,11 +1,12 @@
 from flask import Flask, render_template, request, redirect, url_for
 from firebase_admin import firestore, credentials, initialize_app
-from mgt_fin_exp_fb import extract_to_fb
-from fx import extract_fx
-from mgt_fin_exp_gs import extract_to_gs
+from mgt_fin_exp_fb import ext_daily_equity_financials_yf_fb
+from fx import ext_daily_fx_yf_fb
+from mgt_fin_exp_gs import ext_daily_equity_financials_fb_gs, ext_daily_equity_datetime_fb_gs
 from secret import access_secret
 import json
 from settings import project_id, firebase_database, fx_api_key, firestore_api_key, google_sheets_api_key, schedule_function_key, firebase_auth_api_key
+
 
 app = Flask(__name__)
 
@@ -13,6 +14,7 @@ port = 5000
 
 ### Run the below first if running on local to connect to secret manager on google cloud
 # export GOOGLE_APPLICATION_CREDENTIALS="/home/yuong/work/pyproj/Keys/blockmacro_local_access.json"
+# export GOOGLE_APPLICATION_CREDENTIALS="/home/yuong/work/pyproj/Keys/test_local_access.json"
 
 cloud_run_apikey = access_secret(schedule_function_key, project_id)
 firestore_api_key = access_secret(firestore_api_key, project_id)
@@ -25,20 +27,30 @@ db = firestore.client()
 
 pw = cloud_run_apikey
 
+
+
+@app.get("/test_" + pw)
+def testing():
+    print ("test123")
+    return redirect(url_for("home"))
+
+
 @app.get("/extract_info_fb_" + pw)
 def run_extract_to_fb():
-    extract_to_fb()
+    ext_daily_equity_financials_yf_fb()
     return redirect(url_for("home"))
 
 @app.get("/extract_fx_fb_" + pw)
 def run_extract_fx():
-    extract_fx()
+    ext_daily_fx_yf_fb()
     return redirect(url_for("home"))
 
 @app.get("/extract_to_gs_" + pw)
 def run_extract_to_gs():
-    extract_to_gs()
+    ext_daily_equity_financials_fb_gs()
+    ext_daily_equity_datetime_fb_gs()
     return redirect(url_for("home"))
+
 
 
 @app.get("/")
