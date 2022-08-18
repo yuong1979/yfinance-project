@@ -229,7 +229,7 @@ def ext_daily_fx_yf_fb():
         file_name = __name__
         function_name = inspect.currentframe().f_code.co_name
         subject = "Error on macrokpi project"
-        content = "Error in File name: " + str(file_name) + " Function: " + str(function_name) + " Detailed error: " + str(e)
+        content = "Error in \n File name: " + str(file_name) + "\n Function: " + str(function_name) + "\n Detailed error: " + str(e)
         error_email(subject, content)
 
 

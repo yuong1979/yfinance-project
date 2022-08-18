@@ -104,7 +104,7 @@ def ext_daily_equity_financials_yf_fb():
 
                 # print ("the currency converted is ", currency_required)
                 fx_date_str = fx_extract_time.strftime("%Y-%m-%d")
-                print ("the date extracted from fxhistorial is ", fx_date_str)
+                # print ("the date extracted from fxhistorial is ", fx_date_str)
                 # Lookingup the fx rates to get rates
                 docs = db.collection('fxhistorical').document(fx_date_str).get()
                 # print ("currency type retrieved from fx db is",  docs.to_dict())
@@ -143,7 +143,7 @@ def ext_daily_equity_financials_yf_fb():
         file_name = __name__
         function_name = inspect.currentframe().f_code.co_name
         subject = "Error on macrokpi project"
-        content = "Error in File name: " + str(file_name) + "\n Function: " + str(function_name) + "\n Detailed error: " + str(e)
+        content = "Error in \n File name: " + str(file_name) + "\n Function: " + str(function_name) + "\n Detailed error: " + str(e)
         error_email(subject, content)
 
 

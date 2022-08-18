@@ -58,51 +58,16 @@ def ext_daily_equity_financials_fb_gs():
                 data["ticker"] = i._data['ticker']
                 data["tickername"] = i._data['tickername']
 
-                try:
-                    data["marketCapUSD"] = i._data['marketCapUSD']
-                except:
-                    data["marketCapUSD"] = ""
+                #inserting all the kpis into list to be exported to google sheets
+                kpilist = ['marketCapUSD', 'enterpriseValueUSD', 'freeCashflowUSD', 'operatingCashflowUSD', 
+                    'totalDebtUSD', 'totalRevenueUSD', 'grossProfitsUSD', 'ebitdaUSD', 'currentPriceUSD']
 
-                try:
-                    data["enterpriseValueUSD"] = i._data['enterpriseValueUSD']
-                except:
-                    data["enterpriseValueUSD"] = ""
+                for j in kpilist:
 
-                try:
-                    data["freeCashflowUSD"] = i._data['freeCashflowUSD']
-                except:
-                    data["freeCashflowUSD"] = ""
-
-                try:
-                    data["operatingCashflowUSD"] = i._data['operatingCashflowUSD']
-                except:
-                    data["operatingCashflowUSD"] = ""
-
-                try:
-                    data["totalDebtUSD"] = i._data['totalDebtUSD']
-                except:
-                    data["totalDebtUSD"] = ""
-
-                try:
-                    data["currentPriceUSD"] = i._data['currentPriceUSD']
-                except:
-                    data["currentPriceUSD"] = ""
-
-                try:
-                    data["totalRevenueUSD"] = i._data['totalRevenueUSD']
-                except:
-                    data["totalRevenueUSD"] = ""
-
-                try:
-                    data["grossProfitsUSD"] = i._data['grossProfitsUSD']
-                except:
-                    data["grossProfitsUSD"] = ""
-
-                try:
-                    data["ebitdaUSD"] = i._data['ebitdaUSD']
-                except:
-                    data["ebitdaUSD"] = ""
-
+                    try:
+                        data[j] = i._data[j]
+                    except:
+                        data[j] = ""
 
                 #got to convert datetime into a format acceptable by google sheets and wont throw error
                 data["updated_datetime"] = i._data['updated_datetime'].strftime('%Y-%m-%d %H:%M:%S')
@@ -186,7 +151,7 @@ def ext_daily_equity_financials_fb_gs():
         file_name = __name__
         function_name = inspect.currentframe().f_code.co_name
         subject = "Error on macrokpi project"
-        content = "Error in File name: " + str(file_name) + " Function: " + str(function_name) + " Detailed error: " + str(e)
+        content = "Error in \n File name: " + str(file_name) + "\n Function: " + str(function_name) + "\n Detailed error: " + str(e)
         error_email(subject, content)
 
 
@@ -253,5 +218,5 @@ def ext_daily_equity_datetime_fb_gs():
         file_name = __name__
         function_name = inspect.currentframe().f_code.co_name
         subject = "Error on macrokpi project"
-        content = "Error in File name: " + str(file_name) + " Function: " + str(function_name) + " Detailed error: " + str(e)
+        content = "Error in \n File name: " + str(file_name) + "\n Function: " + str(function_name) + "\n Detailed error: " + str(e)
         error_email(subject, content)
