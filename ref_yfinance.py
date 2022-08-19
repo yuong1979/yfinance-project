@@ -45,9 +45,6 @@ print (msft.recommendations['To Grade'].value_counts())
 # ytd details
 print (msft.info)
 
-# ytd details
-print (msft.info)
-
 # stock splits and dividends
 print (msft.actions)
 

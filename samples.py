@@ -41,7 +41,7 @@ from google.cloud.firestore import Client
 ### bare minimum
 # pip install firebase-admin
 # pip install Flask
-# google-cloud-secret-manager
+# pip install google-cloud-secret-manager
 # pip install pandas
 # pip install yfinance
 # pip install beautifulsoup4

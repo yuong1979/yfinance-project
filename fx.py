@@ -257,21 +257,29 @@ def view_daily_fx_fb():
 
 
 def testing():
-    tz_SG = pytz.timezone('Singapore')
-    recordtime = datetime.now(tz_SG)
-    #fx is updated one day late
-    fx_extract_time = recordtime - timedelta(days=1)
 
-    fx_date_str = fx_extract_time.strftime("%Y-%m-%d")
+    companyticker = yf.Ticker("meta")
+    print (companyticker.recommendations['To Grade'].value_counts())
+    print (companyticker.financials, 'companyticker.financials')
 
-    docs = db.collection('fxhistorical').document(fx_date_str).get()
-    # print ("currency type retrieved from fx db is",  docs.to_dict())
-    currency_required = 'INR'
+    # price history
+    hist = companyticker.history(period="max")
+    print (hist, 'historical price')
 
-    rate = docs._data["currencyrates"][currency_required]
-    print (rate)
+    # pnl - detailed
+    print (companyticker._financials, 'companyticker._financials')
 
+    # pnl - summarized
+    print (companyticker.financials, 'companyticker.financials')
 
+    # pnl - cashflow
+    print (companyticker.cashflow, 'companyticker.cashflow')
+
+    # revenue and earnings - last 4 years
+    print (companyticker.earnings, 'companyticker.earnings')
+
+    # balance sheet
+    print (companyticker.balancesheet, 'companyticker.balancesheet')
 
 ########################################################################################################
 ########################### Adding to the currency list ################################################
