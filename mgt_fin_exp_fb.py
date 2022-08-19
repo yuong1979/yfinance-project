@@ -78,7 +78,7 @@ def ext_daily_equity_financials_yf_fb():
             fx_extract_time = recordtime - timedelta(days=1)
 
             # print (fx_extract_time)
-            time.sleep(1)
+            time.sleep(5)
             ticker = i._data['ticker']
             # print (ticker, "ticker to be extracted")
             # updated_time = i._data['updated_datetime']

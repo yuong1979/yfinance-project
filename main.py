@@ -6,7 +6,8 @@ from mgt_fin_exp_gs import ext_daily_equity_financials_fb_gs, ext_daily_equity_d
 from secret import access_secret
 import json
 from settings import project_id, firebase_database, fx_api_key, firestore_api_key, google_sheets_api_key, schedule_function_key, firebase_auth_api_key
-
+from email_function import error_email
+import inspect
 
 app = Flask(__name__)
 
@@ -29,29 +30,37 @@ pw = cloud_run_apikey
 
 
 
-@app.get("/test_" + pw)
-def testing():
-    print ("test123")
-    return redirect(url_for("home"))
+# ###############################################################################
+# ######## Get request for running using cloud scheduler ########################
+# ###############################################################################
+
+try:
+
+    @app.route("/run_extract_financials_fb")
+    def run_extract_financials_fb():
+        ext_daily_equity_financials_yf_fb()
+        return redirect(url_for("home"))
 
 
-@app.get("/extract_info_fb_" + pw)
-def run_extract_to_fb():
-    ext_daily_equity_financials_yf_fb()
-    return redirect(url_for("home"))
-
-@app.get("/extract_fx_fb_" + pw)
-def run_extract_fx():
-    ext_daily_fx_yf_fb()
-    return redirect(url_for("home"))
-
-@app.get("/extract_to_gs_" + pw)
-def run_extract_to_gs():
-    ext_daily_equity_financials_fb_gs()
-    ext_daily_equity_datetime_fb_gs()
-    return redirect(url_for("home"))
+    @app.route("/run_extract_fx_fb")
+    def run_extract_fx_fb():
+        ext_daily_fx_yf_fb()
+        return redirect(url_for("home"))
 
 
+    @app.route("/run_extract_fb_gs")
+    def run_extract_fb_gs():
+        ext_daily_equity_financials_fb_gs()
+        ext_daily_equity_datetime_fb_gs()
+        return redirect(url_for("home"))
+
+except Exception as e:
+    print (e)
+    file_name = __name__
+    function_name = inspect.currentframe().f_code.co_name
+    subject = "Error on macrokpi project"
+    content = "Error in \n File name: " + str(file_name) + "\n Function: " + str(function_name) + "\n Detailed error: " + str(e)
+    error_email(subject, content)
 
 @app.get("/")
 def home():
@@ -66,7 +75,6 @@ def home():
 
     # return render_template("base.html")
 
-
 if __name__ == "__main__":
     app.run(debug=True, host='0.0.0.0', port=port)
 
@@ -78,3 +86,65 @@ if __name__ == "__main__":
 
 # if __name__ == "__main__":
 #     app.run(debug=True, host='0.0.0.0', port=port)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# ###############################################################################
+# ######## Post request does not work only get request works ####################
+# ###############################################################################
+
+
+# @app.route('/runmission', methods = ['GET', 'POST'])
+# def run_extract():
+
+#     print (request.form)
+
+#     # try:
+
+#     if request.method == 'GET':
+#         error_email("test1","test2")
+
+
+#     if request.method == 'POST':
+
+#         if request.form['mission'] == "run_extract_financials_fb":
+#             print ("run_extract_financials_fb")
+#             ext_daily_equity_financials_yf_fb()
+
+
+#         if request.form['mission'] == "run_extract_fx_fb":
+#             print ("run_extract_fx_fb")
+#             ext_daily_fx_yf_fb()
+
+
+#         if request.form['mission'] == "run_extract_fb_gs":
+#             print ("run_extract_fb_gs")
+#             ext_daily_equity_financials_fb_gs()
+#             ext_daily_equity_datetime_fb_gs()
+
+
+#         if request.form['mission'] == "testonly":
+#             print ("testonly works")
+
+#     return redirect(url_for("home"))
+
+#     # except Exception as e:
+#     #     print (e)
+#     #     file_name = __name__
+#     #     function_name = inspect.currentframe().f_code.co_name
+#     #     subject = "Error on macrokpi project"
+#     #     content = "Error in \n File name: " + str(file_name) + "\n Function: " + str(function_name) + "\n Detailed error: " + str(e)
+#     #     error_email(subject, content)
+
