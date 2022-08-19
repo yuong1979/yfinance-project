@@ -48,9 +48,9 @@ def ext_daily_equity_financials_yf_fb():
     tz_UTC = pytz.timezone('UTC')
     time_seconds = 30
     latest_entry = db.collection('tickerlist').order_by("updated_datetime", direction=firestore.Query.DESCENDING).limit(1).get()
-    timedelta = datetime.now(tz_UTC) - latest_entry[0]._data['updated_datetime']
+    time_diff = datetime.now(tz_UTC) - latest_entry[0]._data['updated_datetime']
 
-    if timedelta.seconds < time_seconds:
+    if time_diff.seconds < time_seconds:
         print ('exit')
         exit()
 
