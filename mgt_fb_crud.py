@@ -13,11 +13,21 @@ from google.oauth2 import service_account
 from google.cloud.firestore import Client
 from secret import access_secret
 from settings import project_id, firebase_database, fx_api_key, firestore_api_key, google_sheets_api_key, schedule_function_key, firebase_auth_api_key
+from googleapiclient.discovery import build
+
 
 firestore_api_key = access_secret(firestore_api_key, project_id)
 firestore_api_key_dict = json.loads(firestore_api_key)
 fbcredentials = service_account.Credentials.from_service_account_info(firestore_api_key_dict)
 db = Client(firebase_database, fbcredentials)
+
+google_sheets_api_key = access_secret(google_sheets_api_key, project_id)
+google_sheets_api_key_dict = json.loads(google_sheets_api_key)
+gscredentials = service_account.Credentials.from_service_account_info(google_sheets_api_key_dict)
+REQUIRED_SPREADSHEET_ID = '1_lobEzbiuP9TE2UZqmqSAwizT8f2oeuZ8mVuUTbBAsA'
+service = build('sheets', 'v4', credentials=gscredentials)
+sheet = service.spreadsheets()
+
 
 # ##################################################################################################
 # ######### Updating tickerlist from companiesmarketcap.com into firebase ##########################
@@ -170,7 +180,10 @@ db = Client(firebase_database, fbcredentials)
 
 def migrate_to_test():
 
-    tickerlist = db.collection('tickerlist').limit(200).get()
+    number_entries = 10
+    migrate_to = 'tickerlisttest'
+
+    tickerlist = db.collection('tickerlist').limit(number_entries).get()
 
     for i in tickerlist:
 
@@ -207,7 +220,7 @@ def migrate_to_test():
             "updated_datetime": updated_datetime
         }
 
-        db.collection('tickerlisttest').document(i.id).set(data, merge=True)
+        db.collection(migrate_to).document(i.id).set(data, merge=True)
 
 
 
@@ -225,6 +238,112 @@ def ticker_investigation():
 
 
     print(docs[0]._data['kpi'])
+
+
+
+########################################################################################
+###########  Sample export dataframe to google sheets  #################################
+########################################################################################
+# python -c 'from ref_yfinance import sample_df_gs; sample_df_gs()'
+
+def sample_df_gs():
+    companyticker = yf.Ticker("meta")
+
+    df = companyticker.financials
+
+    dfcol = []
+    for i in df.columns:
+        i = i.strftime('%Y-%m-%d')
+        dfcol.append(i)
+
+    dfindex = []
+    for i in df.index:
+        dfindex.append([i])
+
+    dflist = df.values.tolist()
+
+    sheetinfo = "Sheet2"
+
+    #Inject the values
+    request = sheet.values().update(spreadsheetId=REQUIRED_SPREADSHEET_ID, 
+        range=sheetinfo+"!B4", valueInputOption="USER_ENTERED", body={"values":dflist}).execute()
+
+    #Inject the index
+    request = sheet.values().update(spreadsheetId=REQUIRED_SPREADSHEET_ID, 
+        range=sheetinfo+"!A4", valueInputOption="USER_ENTERED", body={"values":dfindex}).execute()
+
+    #Inject the fields
+    request = sheet.values().update(spreadsheetId=REQUIRED_SPREADSHEET_ID, 
+        range=sheetinfo+"!B3", valueInputOption="USER_ENTERED", body={"values":[dfcol]}).execute()
+
+
+
+
+
+
+
+# #######################################################################################################
+# ############### testing - you can delete if no longer used ############################################
+# #######################################################################################################
+# python -c 'from mgt_fb_crud import test; test()'
+
+
+def test():
+
+    tz_SG = pytz.timezone('Singapore')
+    end_date = datetime.now(tz_SG)
+    # extracting the last three days in case the last 3 days fx was updated
+    start_date = end_date - timedelta(days=1)
+    start_date_str = '2022-08-16'
+    end_date_str = '2022-08-16'
+
+    doc = db.collection('fx').stream()
+
+    for i in doc:
+        
+        currency = i._data['currency']
+        # IMPORTANT - yfinance extracts one day before instead of exact day - this is import for mgt_fin_exp_fb.py
+        forex_data = yf.download('USD'+ currency +'=X', start = start_date_str, end = end_date_str)
+        # test = forex_data.index = pd.to_datetime(forex_data.index)
+        extracted_fx = forex_data['Adj Close']
+        print (extracted_fx, currency)
+
+    #     for idate, rate in extracted_fx.items():
+    #         #convert into str formet that excludes date so the document can be searched
+    #         idate = idate.replace(hour=8, minute=0)
+    #         hist_datetime = datetime.combine(idate, datetime.min.time())
+    #         hist_input_date = idate.strftime("%Y-%m-%d")
+    #         print (i._data['currency'])
+    #         currencyrates = {
+    #             currency : rate,
+    #             #usd does not exist in fx so it has to be added separately
+    #             'USD': 1
+    #         }
+    #         data = {
+    #             "currencyrates" : currencyrates,
+    #             "datetime_format" : hist_datetime,
+    #             "created_datetime": firestore.SERVER_TIMESTAMP,
+    #             "updated_datetime" : firestore.SERVER_TIMESTAMP
+    #                 }
+    #         #inserting the data into fx historical
+    #         db.collection(u'fxhistorical').document(hist_input_date).set(data, merge=True)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -350,29 +469,6 @@ def pivot_data():
     sum_country_mkt_cap_df = df.groupby(['country','city'])['marketCapUSD'].sum() #.sort_values('updated_datetime', ascending=False)
     sum_country_mkt_cap_df = sum_country_mkt_cap_df.reset_index()
     print (sum_country_mkt_cap_df)
-
-
-
-# ##################################################################################################
-# ###### Extracting from alpha vantage for analysis VANTAGE DOES NOT HAVE ALL I HAVE ###############
-# ##################################################################################################
-
-## you might want to concern https://marketstack.com/?utm_source=Geekflare&utm_medium=LeadsAcquisition&utm_content=Listing
-## as an alternative
-
-
-# from secret import alpha_vantage
-# api_key = alpha_vantage.api_key
-# # ticker = 'D05.SI'
-# # r = requests.get('https://www.alphavantage.co/query?function=OVERVIEW&symbol='+ticker+'&apikey=' + api_key)
-# # dataobj = r.json()
-# # print (dataobj)
-
-# # search = 'dbs'
-# # r = requests.get('https://www.alphavantage.co/query?function=SYMBOL_SEARCH&keywords='+search+'&apikey=' + api_key)
-# # dataobj = r.json()
-# # print (dataobj)
-
 
 
 

@@ -69,16 +69,14 @@ def ext_daily_equity_financials_yf_fb():
         tickerlist = db.collection('tickerlist').where('updated_datetime', '<=', target_datetime).order_by("updated_datetime", direction=firestore.Query.ASCENDING).get()
         print (len(tickerlist), "number of entries to update")
 
-
         for i in tickerlist:
             print ("Updating " + str(i._data['ticker']))
             # print ("Last time updated is " + str(i._data['updated_datetime']))
             recordtime = datetime.now(tz_SG)
             #fx is updated one day late - and you have to make sure that the FX is extracted at 12 everyday
-            fx_extract_time = recordtime - timedelta(days=1)
-
+            
             # print (fx_extract_time)
-            time.sleep(5)
+            
             ticker = i._data['ticker']
             # print (ticker, "ticker to be extracted")
             # updated_time = i._data['updated_datetime']
@@ -92,30 +90,42 @@ def ext_daily_equity_financials_yf_fb():
 
             try:
                 i._data['kpi']["currency"]
+
             except KeyError:
                 db.collection('tickerlist').document(i.id).set(data, merge=True)
+
                 rate = 0
                 print ("rates are zero so just record company info without recording usd amounts")
             else:
                 currency_required = i._data['kpi']["currency"]
-                # print ("the currency extracted is ", currency_required)
                 #converting currency from yfinance into correct currency that can be found in FX table
                 currency_required = currencyclean(currency_required)
-
                 # print ("the currency converted is ", currency_required)
-                fx_date_str = fx_extract_time.strftime("%Y-%m-%d")
-                # print ("the date extracted from fxhistorial is ", fx_date_str)
-                # Lookingup the fx rates to get rates
-                docs = db.collection('fxhistorical').document(fx_date_str).get()
-                # print ("currency type retrieved from fx db is",  docs.to_dict())
+                
+                # Lookingup the fx rates to get rates - sometimes rates are not available and need to check previous day's rates
+                # Also we need to make sure that FX is extracted on the specific before this, if not this will not work 
+                try:
+                    fx_extract_time = recordtime - timedelta(days=1)
+                    fx_date_str = fx_extract_time.strftime("%Y-%m-%d")
+                    docs = db.collection('fxhistorical').document(fx_date_str).get()
+                    rate = docs._data["currencyrates"][currency_required]
+                except:
+                    try:
+                        fx_extract_time = recordtime - timedelta(days=2)
+                        fx_date_str = fx_extract_time.strftime("%Y-%m-%d")
+                        docs = db.collection('fxhistorical').document(fx_date_str).get()
+                        rate = docs._data["currencyrates"][currency_required]
+                    except:
+                        try:
+                            fx_extract_time = recordtime - timedelta(days=3)
+                            fx_date_str = fx_extract_time.strftime("%Y-%m-%d")
+                            docs = db.collection('fxhistorical').document(fx_date_str).get()
+                            rate = docs._data["currencyrates"][currency_required]
+                        except:
+                            pass
 
-                # we need to make sure that FX is extracted on the specific before this - if not this will not work 
-                rate = docs._data["currencyrates"][currency_required]
-                #convert string to float
                 # print (rate, "is the rate and it is type is ", type(rate))
                 rate = float(rate)
-                # print (rate)
-
 
             kpilist = ['marketCap', 'enterpriseValue', 'freeCashflow', 'operatingCashflow', 
                     'totalDebt', 'totalRevenue', 'grossProfits', 'ebitda', 'currentPrice']
@@ -136,6 +146,7 @@ def ext_daily_equity_financials_yf_fb():
             #updating data into firebase
             db.collection('tickerlist').document(i.id).set(data, merge=True)
             print ("Updated " + str(i._data['ticker']))
+            time.sleep(5)
 
 
     except Exception as e:
