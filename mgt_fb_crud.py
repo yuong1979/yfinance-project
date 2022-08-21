@@ -238,140 +238,46 @@ def financials_to_gs():
 
 
 
-
-
-
-
-
-
-
-
-
-
 ######################################################################################
-####### Pivoting the data into formats that are interesting ##########################
+####### Pivoting the KPI data into formats that are interesting ######################
 ######################################################################################
-
-############## Running the function from the command line ###############
 # python -c 'from mgt_fb_crud import pivot_data; pivot_data()'
 
-
 #DESCENDING
-
 def pivot_data():
     docs = db.collection('tickerlisttest').order_by("updated_datetime", direction=firestore.Query.DESCENDING).get()
-    datalist = []
-    for i in docs:
-        print (i._data['ticker'])
+    #input selected KPIs to analyse    
+    kpi1 = ['averageVolume','fullTimeEmployees','returnOnEquity','enterpriseToRevenue','industry','sector','country']
+    kpi1USD = ['marketCapUSD', 'ebitdaUSD', 'enterpriseValueUSD', 'grossProfitsUSD', 'totalRevenueUSD', 'totalDebtUSD']
 
-        data = {}
-        data["ticker"] = i._data['ticker']
+    main_dic = {}
+    for doc in docs:
+        kpi_dic = {}
+        for j in kpi1:
+            try:
+                kpi_dic[j] = doc._data['kpi'][j]
+            except:
+                kpi_dic[j] = ""
 
-        try:
-            data["industry"] = i._data['kpi']['industry']
-        except:
-            data["industry"] = ""
+        for j in kpi1USD:
+            try:
+                kpi_dic[j] = doc._data[j]
+            except:
+                kpi_dic[j] = ""
 
-        try:
-            data["sector"] = i._data['kpi']['sector']
-        except:
-            data["sector"] = ""
+        main_dic[doc._data['ticker']] = kpi_dic
 
-        try:
-            data["country"] = i._data['kpi']['country']
-        except:
-            data["country"] = ""
+    df = pd.DataFrame(main_dic)
+    df = df.transpose()
 
-        try:
-            data["city"] = i._data['kpi']['city']
-        except:
-            data["city"] = ""
+    print (df)
 
-        try:
-            data["marketCapUSD"] = i._data['marketCapUSD']
-        except:
-            data["marketCapUSD"] = 0
-
-        try:
-            data["enterpriseValueUSD"] = i._data['enterpriseValueUSD']
-        except:
-            data["enterpriseValueUSD"] = 0
-
-        try:
-            data["freeCashflowUSD"] = i._data['freeCashflowUSD']
-        except:
-            data["freeCashflowUSD"] = 0
-
-        try:
-            data["operatingCashflowUSD"] = i._data['operatingCashflowUSD']
-        except:
-            data["operatingCashflowUSD"] = 0
-
-        try:
-            data["currentPriceUSD"] = i._data['currentPriceUSD']
-        except:
-            data["currentPriceUSD"] = 0
-
-        try:
-            data["totalRevenueUSD"] = i._data['totalRevenueUSD']
-        except:
-            data["totalRevenueUSD"] = 0
-
-        try:
-            data["grossProfitsUSD"] = i._data['grossProfitsUSD']
-        except:
-            data["grossProfitsUSD"] = 0
-
-        try:
-            data["ebitdaUSD"] = i._data['ebitdaUSD']
-        except:
-            data["ebitdaUSD"] = 0
+    df1 = df.groupby(['industry','sector']).count() #.sort_values('updated_datetime', ascending=False)
+    df1 = df1.reset_index()
+    print (df1)
 
 
-
-        datalist.append(data)
-
-    df = pd.DataFrame(datalist)
-    df.replace(np.nan, '', inplace=True)
-
-    # ## Selected KPIs including usd values 
-    # kpilistselect2 = [
-    # 'industry','sector','ticker'
-    # ]
-
-    # df = df[kpilistselect2]
-    # df = df.groupby(['industry','sector']).count() #.sort_values('updated_datetime', ascending=False)
-    # df = df.reset_index()
-    # print (df)
-
-
-    kpilistselect2 = [
-    'country','city', 'industry','sector','ticker', 'marketCapUSD'
-    ]
-    df = df[kpilistselect2].head(50)
-
- 
-
-    # print (df)
-    # companyinfo = df[df['ticker'] == "MDV"]
-    # companymktcap = companyinfo['marketCap'].values
-    # print (companymktcap)
-    # print (companymktcap[0])
-    # print (type(companymktcap[0]))
-
-    # no_companies_df = df.groupby(['industry','sector'])['ticker'].count() #.sort_values('updated_datetime', ascending=False)
-    # no_companies_df = no_companies_df.reset_index()
-    # print (no_companies_df)
-
-    # sum_mkt_cap_df = df.groupby(['industry','sector'])['marketCap'].sum() #.sort_values('updated_datetime', ascending=False)
-    # sum_mkt_cap_df = sum_mkt_cap_df.reset_index()
-    # print (sum_mkt_cap_df)
-
-    sum_country_mkt_cap_df = df.groupby(['country','city'])['marketCapUSD'].sum() #.sort_values('updated_datetime', ascending=False)
-    sum_country_mkt_cap_df = sum_country_mkt_cap_df.reset_index()
-    print (sum_country_mkt_cap_df)
-
-
-
-
+    df2 = df.groupby(['country'])['marketCapUSD'].sum() #.sort_values('updated_datetime', ascending=False)
+    df2 = df2.reset_index()
+    print (df2)
 
