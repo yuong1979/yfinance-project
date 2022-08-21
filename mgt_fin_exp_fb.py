@@ -13,6 +13,7 @@ from secret import access_secret
 from settings import project_id, firebase_database, fx_api_key, firestore_api_key, google_sheets_api_key, schedule_function_key, firebase_auth_api_key
 from email_function import error_email
 import inspect
+from export_gs import export_gs_func
 
 
 firestore_api_key = access_secret(firestore_api_key, project_id)
@@ -51,7 +52,7 @@ def ext_daily_equity_financials_yf_fb():
     time_diff = datetime.now(tz_UTC) - latest_entry[0]._data['updated_datetime']
 
     if time_diff.seconds < time_seconds:
-        print ('exit')
+        print ('exiting because the latest entry has been extracted less than 30 seconds ago')
         exit()
 
     try:
@@ -85,6 +86,7 @@ def ext_daily_equity_financials_yf_fb():
             data = {
                 'kpi': companyinfo.info,
                 'updated_datetime': recordtime,
+                'record_time_kpi': recordtime,
                 'activated': True
             }
 
@@ -169,48 +171,71 @@ def ext_daily_equity_financials_yf_fb():
 
 
 
+########################################################################################
+###########  Export detailed annual and quarterly financials to fb  ####################
+########################################################################################
+# python -c 'from mgt_fin_exp_fb import detail_fin_ext; detail_fin_ext()'
+
+collection_to_update = 'tickerlisttest'
+
+def detail_fin_ext():
+
+    #only extract for a certain time because you want to make sure all data within a time frame is extracted
 
 
-# # ###############################################################################################################
-# # ######## Daily Updating firebase finance info with yfinance - OLD VERSION ( REPLACED ) ########################
-# # ###############################################################################################################
+    tz_SG = pytz.timezone('Singapore')
+    recordtime = datetime.now(tz_SG)
+    docs = db.collection(collection_to_update).get()
+    data_all = {}
 
-# tz_SG = pytz.timezone('Singapore')
-# datetime_SG = datetime.now(tz_SG)
+    #looping through the tickers
+    for tick in docs:
+        print ("Updating " + str(tick._data['ticker']))
 
-# hoursbeforeextract = 72
-# secb4extract = hoursbeforeextract * 60 * 60
+        ticker = tick._data['ticker']
+        companyinfo = yf.Ticker(ticker)
 
-# target_datetime = datetime_SG - timedelta(seconds=secb4extract)
+        time_series_list = ['quarterly_financials','quarterly_balancesheet',
+                            'quarterly_cashflow','financials','balancesheet','cashflow']
+        dataset = {}
 
-# # if what is on record is updated less than 23(hoursbeforeextract) hours ago, we need to get the record for update
-# tickerlist = db.collection('tickerlist').where('updated_datetime', '<=', target_datetime).order_by("updated_datetime", direction=firestore.Query.ASCENDING).get()
-# print (len(tickerlist), "number of entries to update")
+        for kpi in time_series_list:
+            df = getattr(companyinfo, kpi)
+            df = df.to_dict()
+            date_list = list(df.keys())
+            val_list = list(df.values())
+            data_ind = {}
+            date_ind = {}
 
-# ###############################################################################################
-# ################### include below except when analyzing the data ##############################
-# ###############################################################################################
-# # datalist = []
-# # for i in tickerlist:
-# #     try:
-# #         datalist.append([i._data['updated_datetime'],i._data['tickername'],i._data['kpi']])
-# #     except KeyError:
-# #         datalist.append([i._data['updated_datetime'],i._data['tickername'],"does_not_exists"])
-# # df = pd.DataFrame(datalist)
-# # df.replace(np.nan, '', inplace=True)
-# # df.to_csv("testtime.csv")
+            #relabelling the dates without time and adding them to a dictionary
+            j = 0
+            for date in date_list:
+                fin_date = date.strftime("%Y-%m-%d")
+                fin_values = val_list[j]
+                data_ind[fin_date] = fin_values
+                j = j + 1
+            
+            #looping through and financials and inserting them
+            date_ind[kpi] = data_ind
+            
+            #adding the quarterly/annually financials
+            dataset.update(date_ind)
 
-# for i in tickerlist:
-#     time.sleep(1)
-#     ticker = i._data['ticker']
-#     updated_time = i._data['updated_datetime']
-#     print (updated_time)
-#     companyinfo = yf.Ticker(ticker)
-#     data={
-#         'kpi': companyinfo.info,
-#         'updated_datetime': datetime_SG,
-#         'activated': True
-#         }
-#     #updating data into firebase
-#     db.collection('tickerlist').document(i.id).set(data, merge=True)
-#     print ("Updated " + str(i._data['ticker']))
+        data_all["time_series_financials"] = dataset
+
+        data = {
+            'activated': True,
+            'record_time_financials': recordtime
+        }
+
+        data.update(data_all)
+
+        # print (data)
+
+        #updating data into firebase
+        db.collection(collection_to_update).document(tick.id).set(data, merge=True)
+        print ("Updated " + str(tick._data['ticker']))
+
+
+
+

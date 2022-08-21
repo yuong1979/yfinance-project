@@ -11,6 +11,7 @@ import json
 from firebase_admin import firestore
 import time
 from google.cloud.firestore import Client
+import pytz
 
 google_sheets_api_key = access_secret(google_sheets_api_key, project_id)
 google_sheets_api_key_dict = json.loads(google_sheets_api_key)
@@ -26,7 +27,7 @@ db = Client(firebase_database, fbcredentials)
 
 
 ########################################################################################
-###########  Sample export dataframe to google sheets  #################################
+###########  Exploring y finance  ######################################################
 ########################################################################################
 # python -c 'from ref_yfinance import sample_df_gs; sample_df_gs()'
 
@@ -48,102 +49,7 @@ def sample_df_gs():
     print (df)
 
 
-    dfindex = []
-    for i in df.index:
-        dfindex.append([i])
 
-    dfcol = []
-    for i in df.columns:
-        i = i.strftime('%Y-%m-%d')
-        dfcol.append(i)
-
-    dflist = df.values.tolist()
-
-    sheetinfo = "Sheet2"
-
-    #Inject the values
-    request = sheet.values().update(spreadsheetId=REQUIRED_SPREADSHEET_ID, 
-        range=sheetinfo+"!B4", valueInputOption="USER_ENTERED", body={"values":dflist}).execute()
-
-    #Inject the index
-    request = sheet.values().update(spreadsheetId=REQUIRED_SPREADSHEET_ID, 
-        range=sheetinfo+"!A4", valueInputOption="USER_ENTERED", body={"values":dfindex}).execute()
-
-    #Inject the fields
-    request = sheet.values().update(spreadsheetId=REQUIRED_SPREADSHEET_ID, 
-        range=sheetinfo+"!B3", valueInputOption="USER_ENTERED", body={"values":[dfcol]}).execute()
-
-
-
-
-########################################################################################
-###########  Test export yfinance dataframe to fb  #####################################
-########################################################################################
-# python -c 'from ref_yfinance import test_extraction; test_extraction()'
-
-def test_extraction():
-
-    docs = db.collection('tickerlisttest').get()
-
-    for i in docs:
-        print ("Updating " + str(i._data['ticker']))
-
-        ticker = i._data['ticker']
-        companyinfo = yf.Ticker(ticker)
-
-        data = { 
-            'quarterly_financials' : str(companyinfo.quarterly_financials),
-            'quarterly_balancesheet' : str(companyinfo.quarterly_balancesheet),
-            'quarterly_cashflow' : str(companyinfo.quarterly_cashflow),
-            'annual_financials' : str(companyinfo.financials),
-            'annual_balancesheet' : str(companyinfo.balancesheet),
-            'annual_cashflow' : str(companyinfo.cashflow),
-
-            'updated_datetime': firestore.SERVER_TIMESTAMP,
-            'activated': True
-        }
-
-        #updating data into firebase
-        db.collection('tickerlisttest').document(i.id).set(data, merge=True)
-        print ("Updated " + str(i._data['ticker']))
-
-
-### try converting data into dataframe #####
-
-
-########################################################################################
-########### try converting data into dataframe #########################################
-########################################################################################
-# python -c 'from ref_yfinance import ticker_investigation; ticker_investigation()'
-
-ticker = 'LOVE'
-
-def ticker_investigation():
-    docs = db.collection('tickerlisttest').where("ticker", "==", ticker).get()
-
-
-    test = docs[0]._data['quarterly_financials']
-
-    # print (type(test))
-
-    # df = pd.DataFrame(test)
-
-    # print (df)
-
-
-    import sys
-    if sys.version_info[0] < 3: 
-        from StringIO import StringIO
-    else:
-        from io import StringIO
-
-    import pandas as pd
-
-    TESTDATA = StringIO(test)
-
-    df = pd.read_csv(TESTDATA, sep=";")
-
-    print (df)
 
 # recommendations = companyticker.recommendations['To Grade'].value_counts()
 # print (recommendations, 'recommendations')

@@ -220,3 +220,9 @@ def ext_daily_equity_datetime_fb_gs():
         subject = "Error on macrokpi project"
         content = "Error in \n File name: " + str(file_name) + "\n Function: " + str(function_name) + "\n Detailed error: " + str(e)
         error_email(subject, content)
+
+
+
+
+
+

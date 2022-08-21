@@ -14,6 +14,7 @@ from google.cloud.firestore import Client
 from secret import access_secret
 from settings import project_id, firebase_database, fx_api_key, firestore_api_key, google_sheets_api_key, schedule_function_key, firebase_auth_api_key
 from googleapiclient.discovery import build
+from export_gs import export_gs_func
 
 
 firestore_api_key = access_secret(firestore_api_key, project_id)
@@ -148,27 +149,6 @@ sheet = service.spreadsheets()
 
 
 
-# ######################################################################################
-# ####### Extracting whole ticker dataset to csv for analysis ##########################
-# ######################################################################################
-
-
-# # print the datetime to csv to analyse data if the code is working correctly
-# obj = db.collection('tickerlist').get()
-# print (len(obj))
-# datalist = []
-# for i in obj:
-
-#     try:
-#         datalist.append([i._data['updated_datetime'],i._data['tickername'],i._data['kpi']])
-#     except KeyError:
-#         datalist.append([i._data['updated_datetime'],i._data['tickername'],"does_not_exists"])
-
-# df = pd.DataFrame(datalist)
-# df.replace(np.nan, '', inplace=True)
-# df.to_csv("testtime.csv")
-
-
 
 
 ######################################################################################
@@ -179,49 +159,16 @@ sheet = service.spreadsheets()
 # python -c 'from mgt_fb_crud import migrate_to_test; migrate_to_test()'
 
 def migrate_to_test():
-
-    number_entries = 10
+    number_entries = 5
     migrate_to = 'tickerlisttest'
-
     tickerlist = db.collection('tickerlist').limit(number_entries).get()
+    for tick in tickerlist:
 
-    for i in tickerlist:
+        data_dict = {}
+        for j in tick._data:
+            data_dict[j] = tick._data[j]
 
-        ticker = i._data['ticker']
-        activated = i._data['activated']
-        created_datetime = i._data['created_datetime']
-        ebitdaUSD = i._data['ebitdaUSD']
-        enterpriseValueUSD = i._data['enterpriseValueUSD']
-        freeCashflowUSD = i._data['freeCashflowUSD']
-        grossProfitsUSD = i._data['grossProfitsUSD']
-        kpi = i._data['kpi']
-        marketCapUSD = i._data['marketCapUSD']
-        operatingCashflowUSD = i._data['operatingCashflowUSD']
-        tickername = i._data['tickername']
-        totalDebtUSD = i._data['totalDebtUSD']
-        totalRevenueUSD = i._data['totalRevenueUSD']
-        updated_datetime = i._data['updated_datetime']
-
-        data = {
-
-            'ticker': ticker,
-            'activated': activated,
-            "created_datetime": created_datetime,
-            "ebitdaUSD": ebitdaUSD,
-            "enterpriseValueUSD": enterpriseValueUSD,
-            "freeCashflowUSD": freeCashflowUSD,
-            "grossProfitsUSD": grossProfitsUSD,
-            "kpi": kpi,
-            "marketCapUSD": marketCapUSD,
-            "operatingCashflowUSD": operatingCashflowUSD,
-            "tickername": tickername,
-            "totalDebtUSD": totalDebtUSD,
-            "totalRevenueUSD": totalRevenueUSD,
-            "updated_datetime": updated_datetime
-        }
-
-        db.collection(migrate_to).document(i.id).set(data, merge=True)
-
+        db.collection(migrate_to).document(tick.id).set(data_dict, merge=True)
 
 
 ######################################################################################
@@ -232,11 +179,8 @@ def migrate_to_test():
 # python -c 'from mgt_fb_crud import ticker_investigation; ticker_investigation()'
 
 ticker = 'DELHIVERY.NS'
-
 def ticker_investigation():
     docs = db.collection('tickerlist').where("ticker", "==", ticker).get()
-
-
     print(docs[0]._data['kpi'])
 
 
@@ -244,92 +188,49 @@ def ticker_investigation():
 ########################################################################################
 ###########  Sample export dataframe to google sheets  #################################
 ########################################################################################
-# python -c 'from ref_yfinance import sample_df_gs; sample_df_gs()'
+# python -c 'from mgt_fb_crud import sample_df_gs; sample_df_gs()'
 
 def sample_df_gs():
-    companyticker = yf.Ticker("meta")
-
-    df = companyticker.financials
-
-    dfcol = []
-    for i in df.columns:
-        i = i.strftime('%Y-%m-%d')
-        dfcol.append(i)
-
-    dfindex = []
-    for i in df.index:
-        dfindex.append([i])
-
-    dflist = df.values.tolist()
-
+    name = "pnl quarterly"
     sheetinfo = "Sheet2"
-
-    #Inject the values
-    request = sheet.values().update(spreadsheetId=REQUIRED_SPREADSHEET_ID, 
-        range=sheetinfo+"!B4", valueInputOption="USER_ENTERED", body={"values":dflist}).execute()
-
-    #Inject the index
-    request = sheet.values().update(spreadsheetId=REQUIRED_SPREADSHEET_ID, 
-        range=sheetinfo+"!A4", valueInputOption="USER_ENTERED", body={"values":dfindex}).execute()
-
-    #Inject the fields
-    request = sheet.values().update(spreadsheetId=REQUIRED_SPREADSHEET_ID, 
-        range=sheetinfo+"!B3", valueInputOption="USER_ENTERED", body={"values":[dfcol]}).execute()
+    companyticker = yf.Ticker("meta")
+    df = companyticker.financials
+    export_gs_func(name, df, sheetinfo)
 
 
+########################################################################################
+###########  Delete unwanted record datetime from the dataset  #########################
+########################################################################################
+# python -c 'from mgt_fin_exp_fb import test_delete; test_delete()'
 
-
-
-
-
-# #######################################################################################################
-# ############### testing - you can delete if no longer used ############################################
-# #######################################################################################################
-# python -c 'from mgt_fb_crud import test; test()'
-
-
-def test():
-
-    tz_SG = pytz.timezone('Singapore')
-    end_date = datetime.now(tz_SG)
-    # extracting the last three days in case the last 3 days fx was updated
-    start_date = end_date - timedelta(days=1)
-    start_date_str = '2022-08-16'
-    end_date_str = '2022-08-16'
-
-    doc = db.collection('fx').stream()
-
-    for i in doc:
-        
-        currency = i._data['currency']
-        # IMPORTANT - yfinance extracts one day before instead of exact day - this is import for mgt_fin_exp_fb.py
-        forex_data = yf.download('USD'+ currency +'=X', start = start_date_str, end = end_date_str)
-        # test = forex_data.index = pd.to_datetime(forex_data.index)
-        extracted_fx = forex_data['Adj Close']
-        print (extracted_fx, currency)
-
-    #     for idate, rate in extracted_fx.items():
-    #         #convert into str formet that excludes date so the document can be searched
-    #         idate = idate.replace(hour=8, minute=0)
-    #         hist_datetime = datetime.combine(idate, datetime.min.time())
-    #         hist_input_date = idate.strftime("%Y-%m-%d")
-    #         print (i._data['currency'])
-    #         currencyrates = {
-    #             currency : rate,
-    #             #usd does not exist in fx so it has to be added separately
-    #             'USD': 1
-    #         }
-    #         data = {
-    #             "currencyrates" : currencyrates,
-    #             "datetime_format" : hist_datetime,
-    #             "created_datetime": firestore.SERVER_TIMESTAMP,
-    #             "updated_datetime" : firestore.SERVER_TIMESTAMP
-    #                 }
-    #         #inserting the data into fx historical
-    #         db.collection(u'fxhistorical').document(hist_input_date).set(data, merge=True)
+# change the fieldtodelete ""
+def test_delete():
+    # delete kpi fields from a collection
+    collection = "tickerlisttest"
+    fieldtodelete = ""
+    docs = db.collection(collection).get()
+    for doc in docs:
+        key = doc.id
+        db.collection(collection).document(key).update({
+        fieldtodelete: firestore.DELETE_FIELD
+    })
 
 
 
+########################################################################################
+###########  Extracting the time series financials to gs  ###############################
+########################################################################################
+# python -c 'from mgt_fin_exp_fb import financials_to_gs; financials_to_gs()'
+
+ticker = 'WY'
+def financials_to_gs():
+    docs = db.collection('tickerlisttest').where("ticker", "==", ticker).get()[0]
+    time_series_financials = docs._data['time_series_financials']
+    cashflow = time_series_financials['cashflow']
+    df = pd.DataFrame(cashflow)
+    name = "cashflow"
+    sheetinfo = "Sheet2"
+    export_gs_func(name, df, sheetinfo)
 
 
 
