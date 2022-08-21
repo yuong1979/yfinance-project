@@ -36,11 +36,8 @@ def currencyclean(currency):
 
 
 # #################################################################################################
-# ####### Extracting data from yfinance into firebase and include usd values (UNDER TESTING) ######
-# ####### To replace mgt_fin_exp_fb.py when this is completed #####################################
+# ####### Extracting data from yfinance into firebase and include usd values ######################
 # #################################################################################################
-
-############### Running the function from the command line ###############
 # python -c 'from mgt_fin_exp_fb import ext_daily_equity_financials_yf_fb; ext_daily_equity_financials_yf_fb()'
 
 def ext_daily_equity_financials_yf_fb():
@@ -57,7 +54,6 @@ def ext_daily_equity_financials_yf_fb():
 
     try:
 
-        #converting currency from yfinance into correct currency that can be found in alpha vantage
         tz_SG = pytz.timezone('Singapore')
         datetime_SG = datetime.now(tz_SG)
 
@@ -74,22 +70,15 @@ def ext_daily_equity_financials_yf_fb():
             print ("Updating " + str(i._data['ticker']))
             # print ("Last time updated is " + str(i._data['updated_datetime']))
             recordtime = datetime.now(tz_SG)
-            #fx is updated one day late - and you have to make sure that the FX is extracted at 12 everyday
-            
-            # print (fx_extract_time)
-            
             ticker = i._data['ticker']
             # print (ticker, "ticker to be extracted")
-            # updated_time = i._data['updated_datetime']
             companyinfo = yf.Ticker(ticker)
-
             data = {
                 'kpi': companyinfo.info,
                 'updated_datetime': recordtime,
                 'record_time_kpi': recordtime,
                 'activated': True
             }
-
             try:
                 i._data['kpi']["currency"]
 
@@ -176,22 +165,27 @@ def ext_daily_equity_financials_yf_fb():
 ########################################################################################
 # python -c 'from mgt_fin_exp_fb import detail_fin_ext; detail_fin_ext()'
 
-collection_to_update = 'tickerlisttest'
 
 def detail_fin_ext():
-
-    #only extract for a certain time because you want to make sure all data within a time frame is extracted
-
-
+    collection_to_update = 'tickerlisttest'
     tz_SG = pytz.timezone('Singapore')
-    recordtime = datetime.now(tz_SG)
-    docs = db.collection(collection_to_update).get()
+    datetime_SG = datetime.now(tz_SG)
+    hoursbeforeextract = 48
+    secb4extract = hoursbeforeextract * 60 * 60
+    target_datetime = datetime_SG - timedelta(seconds=secb4extract)
+
+    # if what is on record is updated less than 24(hoursbeforeextract) hours ago, we need to get the record for update
+    docs = db.collection(collection_to_update).where('record_time_financials', '<=', target_datetime).order_by("record_time_financials", direction=firestore.Query.ASCENDING).get()
+    print (len(docs), "number of entries to update")
+
     data_all = {}
 
     #looping through the tickers
     for tick in docs:
+        
         print ("Updating " + str(tick._data['ticker']))
 
+        recordtime = datetime.now(tz_SG)
         ticker = tick._data['ticker']
         companyinfo = yf.Ticker(ticker)
 
@@ -237,5 +231,80 @@ def detail_fin_ext():
         print ("Updated " + str(tick._data['ticker']))
 
 
+##########################################################################################################
+###########  Insert record_time_financials and record_time_kpi field into collection ####################
+##########################################################################################################
+# python -c 'from mgt_fin_exp_fb import insert_price_history; insert_price_history()'
+tz_SG = pytz.timezone('Singapore')
+record_time = datetime.now(tz_SG)
+
+hoursbeforeextract = 48
+secb4extract = hoursbeforeextract * 60 * 60
+target_datetime = record_time - timedelta(days=4)
+
+startdata = target_datetime
+enddata = record_time
+
+# startdata = '2022-08-01'
+# enddata = '2022-08-19'
+
+def insert_price_history():
+    collection_to_update = "tickerlisttest"
+    docs = db.collection(collection_to_update).get()
+
+    for doc in docs:
+        ticker = doc._data['ticker']
+        data = yf.Ticker(ticker)
+
+        # df = data.history(period="max")
+        df = data.history(start=startdata,  end=enddata)
+
+        # the datetime needs to be changed if not firestore will not accept it
+        df.index = pd.to_datetime(df.index, format = '%m/%d/%Y').strftime('%Y-%m-%d')
+        df = df.to_dict()
+        col_list = list(df.keys())
+        val_list = list(df.values())
+
+        data = {}
+        data_ind = {}
+
+        #relabelling the dates without time and adding them to a dictionary
+        j = 0
+        for k in col_list:
+            fin_values = val_list[j]
+            data_ind[k] = fin_values
+            j = j + 1
+
+            data['price_history'] = data_ind
+            data['record_time_price_history'] = record_time
+
+            db.collection(collection_to_update).document(doc.id).set(data, merge=True)
 
 
+
+##########################################################################################################
+###########  Insert record_time_financials and record_time_kpi field into collection ####################
+##########################################################################################################
+# python -c 'from mgt_fin_exp_fb import insert_record_time; insert_record_time()'
+
+tz_SG = pytz.timezone('Singapore')
+record_time = datetime.now(tz_SG)
+hoursbeforeextract = 48
+secb4extract = hoursbeforeextract * 60 * 60
+target_datetime = record_time - timedelta(seconds=secb4extract)
+
+def insert_record_time():
+    date_to_record = record_time - timedelta(days=365)
+    collection_to_update = 'tickerlisttest'
+    docs = db.collection(collection_to_update).where('record_time_financials', '<=', target_datetime).order_by("record_time_financials", direction=firestore.Query.ASCENDING).get()
+    print (len(docs), "number of entries to update")
+    data = {}
+    for tick in docs:
+        
+        data = {
+            "record_time_price_history" : date_to_record,
+            "record_time_financials" : date_to_record,
+            "record_time_kpi" : date_to_record
+        }
+
+        db.collection(collection_to_update).document(tick.id).set(data, merge=True)
