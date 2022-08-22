@@ -231,80 +231,11 @@ def detail_fin_ext():
         print ("Updated " + str(tick._data['ticker']))
 
 
-##########################################################################################################
-###########  Insert record_time_financials and record_time_kpi field into collection ####################
-##########################################################################################################
-# python -c 'from mgt_fin_exp_fb import insert_price_history; insert_price_history()'
-tz_SG = pytz.timezone('Singapore')
-record_time = datetime.now(tz_SG)
-
-hoursbeforeextract = 48
-secb4extract = hoursbeforeextract * 60 * 60
-target_datetime = record_time - timedelta(days=4)
-
-startdata = target_datetime
-enddata = record_time
-
-# startdata = '2022-08-01'
-# enddata = '2022-08-19'
-
-def insert_price_history():
-    collection_to_update = "tickerlisttest"
-    docs = db.collection(collection_to_update).get()
-
-    for doc in docs:
-        ticker = doc._data['ticker']
-        data = yf.Ticker(ticker)
-
-        # df = data.history(period="max")
-        df = data.history(start=startdata,  end=enddata)
-
-        # the datetime needs to be changed if not firestore will not accept it
-        df.index = pd.to_datetime(df.index, format = '%m/%d/%Y').strftime('%Y-%m-%d')
-        df = df.to_dict()
-        col_list = list(df.keys())
-        val_list = list(df.values())
-
-        data = {}
-        data_ind = {}
-
-        #relabelling the dates without time and adding them to a dictionary
-        j = 0
-        for k in col_list:
-            fin_values = val_list[j]
-            data_ind[k] = fin_values
-            j = j + 1
-
-            data['price_history'] = data_ind
-            data['record_time_price_history'] = record_time
-
-            db.collection(collection_to_update).document(doc.id).set(data, merge=True)
 
 
 
-##########################################################################################################
-###########  Insert record_time_financials and record_time_kpi field into collection ####################
-##########################################################################################################
-# python -c 'from mgt_fin_exp_fb import insert_record_time; insert_record_time()'
 
-tz_SG = pytz.timezone('Singapore')
-record_time = datetime.now(tz_SG)
-hoursbeforeextract = 48
-secb4extract = hoursbeforeextract * 60 * 60
-target_datetime = record_time - timedelta(seconds=secb4extract)
 
-def insert_record_time():
-    date_to_record = record_time - timedelta(days=365)
-    collection_to_update = 'tickerlisttest'
-    docs = db.collection(collection_to_update).where('record_time_financials', '<=', target_datetime).order_by("record_time_financials", direction=firestore.Query.ASCENDING).get()
-    print (len(docs), "number of entries to update")
-    data = {}
-    for tick in docs:
-        
-        data = {
-            "record_time_price_history" : date_to_record,
-            "record_time_financials" : date_to_record,
-            "record_time_kpi" : date_to_record
-        }
 
-        db.collection(collection_to_update).document(tick.id).set(data, merge=True)
+
+

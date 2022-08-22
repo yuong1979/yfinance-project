@@ -1,6 +1,9 @@
 from flask import Flask, render_template, request, redirect, url_for
 from firebase_admin import firestore, credentials, initialize_app
-from mgt_fin_exp_fb import ext_daily_equity_financials_yf_fb
+from mgt_fb_crud import financials_to_gs
+# from mgt_fin_exp_fb import ext_daily_equity_financials_yf_fb
+from equity_imp import imp_equity_daily_kpi_fb
+from equity_exp import exp_equity_daily_kpi_datetime_gs, exp_equity_daily_kpi_gs
 from fx import ext_daily_fx_yf_fb
 from mgt_fin_exp_gs import ext_daily_equity_financials_fb_gs, ext_daily_equity_datetime_fb_gs
 from secret import access_secret
@@ -30,6 +33,10 @@ pw = cloud_run_apikey
 
 
 
+
+
+
+
 # ###############################################################################
 # ######## Get request for running using cloud scheduler ########################
 # ###############################################################################
@@ -38,7 +45,7 @@ try:
 
     @app.route("/run_extract_financials_fb")
     def run_extract_financials_fb():
-        ext_daily_equity_financials_yf_fb()
+        imp_equity_daily_kpi_fb()
         return redirect(url_for("home"))
 
 
@@ -50,8 +57,8 @@ try:
 
     @app.route("/run_extract_fb_gs")
     def run_extract_fb_gs():
-        ext_daily_equity_financials_fb_gs()
-        ext_daily_equity_datetime_fb_gs()
+        exp_equity_daily_kpi_datetime_gs()
+        exp_equity_daily_kpi_gs()
         return redirect(url_for("home"))
 
 except Exception as e:

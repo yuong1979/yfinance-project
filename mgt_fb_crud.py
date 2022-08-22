@@ -154,14 +154,13 @@ sheet = service.spreadsheets()
 ######################################################################################
 ####### Migrating the testing ticker data to tickerdatatest ##########################
 ######################################################################################
-
-############## Running the function from the command line ###############
 # python -c 'from mgt_fb_crud import migrate_to_test; migrate_to_test()'
 
 def migrate_to_test():
     number_entries = 5
-    migrate_to = 'tickerlisttest'
-    tickerlist = db.collection('tickerlist').limit(number_entries).get()
+    migrate_to = 'equity_price_history_test'
+    migrate_from = 'equity_price_history'
+    tickerlist = db.collection(migrate_from).limit(number_entries).get()
     for tick in tickerlist:
 
         data_dict = {}
@@ -169,6 +168,28 @@ def migrate_to_test():
             data_dict[j] = tick._data[j]
 
         db.collection(migrate_to).document(tick.id).set(data_dict, merge=True)
+
+
+#############################################################################################################################
+####### Deleting all the data to tickerdatatest (EXTREMELY DANGEROUS CODE) DOUBLE CHECK B4 RUNNING ##########################
+#############################################################################################################################
+# python -c 'from mgt_fb_crud import delete_all_fields; delete_all_fields()'
+
+def delete_all_fields():
+    collection = "tickerlistpricetest"
+    docs = db.collection(collection).get()
+    for doc in docs:
+        key = doc.id
+        for i in doc.to_dict():
+            todelete = i
+            db.collection(collection).document(key).update({
+            todelete : firestore.DELETE_FIELD
+        })
+
+
+
+
+
 
 
 ######################################################################################
@@ -201,7 +222,7 @@ def sample_df_gs():
 ########################################################################################
 ###########  Delete unwanted record datetime from the dataset  #########################
 ########################################################################################
-# python -c 'from mgt_fin_exp_fb import test_delete; test_delete()'
+# python -c 'from mgt_fb_crud import test_delete; test_delete()'
 
 # change the fieldtodelete ""
 def test_delete():
