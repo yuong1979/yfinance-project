@@ -10,7 +10,7 @@ from email_function import error_email
 import inspect
 # from mgt_fb_crud import financials_to_gs
 # from mgt_fin_exp_fb import ext_daily_equity_financials_yf_fb
-from mgt_fin_exp_gs import ext_daily_equity_financials_fb_gs, ext_daily_equity_datetime_fb_gs
+# from mgt_fin_exp_gs import ext_daily_equity_financials_fb_gs, ext_daily_equity_datetime_fb_gs
 from equity_exp import exp_dataset_datetime_gs, exp_equity_daily_kpi_gs, exp_fx_datetime_gs
 from equity_imp import imp_equity_daily_kpi_fb, imp_equity_financials_fb, imp_equity_price_history_fb
 

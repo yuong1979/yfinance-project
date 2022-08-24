@@ -159,7 +159,7 @@ sheet = service.spreadsheets()
 # equity_daily_kpi_test
 
 def migrate_to_test():
-    number_entries = 10
+    number_entries = 100
     migrate_to = 'equity_daily_kpi_test'
     migrate_from = 'equity_daily_kpi'
     tickerlist = db.collection(migrate_from).limit(number_entries).get()
@@ -343,7 +343,7 @@ def pivot_data():
 
 #DESCENDING
 def testing():
-    docs = db.collection('equity_daily_kpi').stream()
+    docs = db.collection('equity_daily_kpi_test').stream()
     #input selected KPIs to analyse    
     kpi1 = ['industry','sector','country']
     kpi1USD = ['marketCapUSD', 'ticker']
@@ -370,9 +370,11 @@ def testing():
 
     # print (df)
 
-    df1 = df.groupby(['sector']).count() #.sort_values('updated_datetime', ascending=False)
+    df1 = df.groupby(['industry']).count() #.sort_values('updated_datetime', ascending=False)
     df1 = df1.reset_index()
     print (df1)
+
+
 
 
 ## design the aggregation process
