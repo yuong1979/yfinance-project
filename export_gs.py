@@ -14,7 +14,7 @@ service = build('sheets', 'v4', credentials=gscredentials)
 sheet = service.spreadsheets()
 
 ########################################################################################
-###########  Sample export dataframe to google sheets  #################################
+###########  Export function to google sheets  #########################################
 ########################################################################################
 # python -c 'from export_gs import export_gs_func; export_gs_func()'
 
