@@ -1,3 +1,5 @@
+from doctest import debug_script
+from unicodedata import name
 from flask import Flask, render_template, request, redirect, url_for
 from firebase_admin import firestore, credentials, initialize_app
 from fx import ext_daily_fx_yf_fb
@@ -51,38 +53,38 @@ pw = cloud_run_apikey
 
 try:
 
-    # runs every one hour
+    # runs every one hour - frequency : * */1 * * *
     @app.route("/imp_equity_daily_kpi_fb")
-    def imp_equity_daily_kpi_fb():
+    def run_imp_equity_daily_kpi_fb():
         #extracting daily kpi
         imp_equity_daily_kpi_fb()
         return redirect(url_for("home"))
 
-    # runs every one hour
+    # runs every one hour - frequency : */10 * * * *
     @app.route("/imp_equity_financials_fb")
-    def imp_equity_financials_fb():
+    def run_imp_equity_financials_fb():
         #extracting financials - only done once a quarter after initial extraction is complete
         imp_equity_financials_fb()
         return redirect(url_for("home"))
 
-    # runs every one hour
+    # runs every one hour - frequency : */10 * * * *
     @app.route("/imp_equity_price_history_fb")
-    def imp_equity_price_history_fb():
+    def run_imp_equity_price_history_fb():
         #extracting financials - after initial extraction is complete, change the code to extract daily only
         imp_equity_price_history_fb()
         return redirect(url_for("home"))
 
 
-    # runs every day at 12am
+    # runs every day at 12am - frequency : 1 0 * * *
     @app.route("/ext_daily_fx_yf_fb")
-    def ext_daily_fx_yf_fb():
+    def run_ext_daily_fx_yf_fb():
         #extracting daily fx for rates to use in kpi calculations
         ext_daily_fx_yf_fb()
         return redirect(url_for("home"))
 
-    # runs every day at 12pm - change to running every 6 hours
+    # runs every day at 12pm - change to running every 6 hours - frequency : 0 */6 * * *
     @app.route("/exp_fb_gs")
-    def exp_fb_gs():
+    def run_exp_fb_gs():
         #extracting all datasets datetiem into gs to ensure all neccessary extracted
         exp_dataset_datetime_gs()
         #extracting daily kpi into gs
@@ -126,6 +128,37 @@ if __name__ == "__main__":
 #     app.run(debug=True, host='0.0.0.0', port=port)
 
 
+
+#cloud schedule updates
+# every 2 hours
+# name : imp_equity_daily_kpi_fb
+# description : imp_equity_daily_kpi_fb
+# frequency : * */2 * * *
+# http : https://flaskapptest-hk6dfyb5mq-uc.a.run.app/imp_equity_daily_kpi_fb
+
+# every 10 minutes
+# name : imp_equity_financials_fb
+# description : imp_equity_financials_fb
+# frequency : */10 * * * *
+# http : https://flaskapptest-hk6dfyb5mq-uc.a.run.app/imp_equity_financials_fb
+
+# every 10 minutes
+# name : imp_equity_price_history_fb
+# description : imp_equity_price_history_fb
+# frequency : */10 * * * *
+# http : https://flaskapptest-hk6dfyb5mq-uc.a.run.app/imp_equity_price_history_fb
+
+# at 0000 everyday
+# name : ext_daily_fx_yf_fb
+# description : ext_daily_fx_yf_fb
+# frequency : 1 0 * * *
+# http : https://flaskapptest-hk6dfyb5mq-uc.a.run.app/ext_daily_fx_yf_fb
+
+# every 6 hours
+# name : exp_fb_gs
+# description : exp_fb_gs
+# frequency : 0 */6 * * *
+# http : https://flaskapptest-hk6dfyb5mq-uc.a.run.app/exp_fb_gs
 
 
 

@@ -143,8 +143,9 @@ def currencyclean(currency):
 
 def imp_equity_daily_kpi_fb():
 
+
     collection = 'equity_daily_kpi'
-    sleeptime = 1
+    sleeptime = 5
     #check if the document in the collections latest date extracted is > 30 seconds ago, if so to exit(), if not proceed to run
     tz_UTC = pytz.timezone('UTC')
     time_seconds = 30

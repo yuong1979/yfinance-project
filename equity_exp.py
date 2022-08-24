@@ -240,80 +240,95 @@ def exp_dataset_datetime_gs():
         error_email(subject, content)
 
 
-
 # ###############################################################################
 # ######## Export datetime for fx update into google sheets  ####################
 # ###############################################################################
 # python -c 'from equity_exp import exp_fx_datetime_gs; exp_fx_datetime_gs()'
 def exp_fx_datetime_gs():
 
-    docs = db.collection(u'fx').get()
-    curr_list = []
-    for i in docs:
-        curr_list.append(i._data['currency'])
+    try:
 
-    docs = db.collection(u'fxhistorical').order_by("updated_datetime", direction=firestore.Query.DESCENDING).limit(3).stream()
+        docs = db.collection(u'fx').get()
+        curr_list = []
+        for i in docs:
+            curr_list.append(i._data['currency'])
 
-    curr_dict = {}
+        docs = db.collection(u'fxhistorical').order_by("updated_datetime", direction=firestore.Query.DESCENDING).limit(3).stream()
 
-    for i in docs:
-        currencies = list(i._data['currencyrates'].keys())
-        # currencies = i._data['currencyrates'].keys()
-        year = i._data['updated_datetime'].year
-        month = i._data['updated_datetime'].month
-        day = i._data['updated_datetime'].day
-        hour = i._data['updated_datetime'].hour
-        minute = i._data['updated_datetime'].minute
-        tzinfo = i._data['updated_datetime'].tzinfo
-        date = datetime(year, month, day, hour, minute, tzinfo=tzinfo).strftime('%Y-%m-%d')
-        curr_dict[date] = currencies
+        curr_dict = {}
 
-
-    dataset_dict = {}
-    for i in curr_dict:
-        data_dict = {}
-        for curr in curr_list:
-            if curr in curr_dict[i]:
-                data_dict[curr] = "yes"
-            else:
-                data_dict[curr] = "no"
-
-        dataset_dict[i] = data_dict
-
-    df = pd.DataFrame.from_dict(dataset_dict)
-
-    # print (df)
-
-    dfindex = []
-    for i in df.index:
-        dfindex.append([i])
-    dflist = df.values.tolist()
-    dfcolname = df.columns.tolist()
-
-    sheetinfo = "Datetime"
-
-    request = sheet.values().update(spreadsheetId=REQUIRED_SPREADSHEET_ID, 
-        range=sheetinfo+"!K3", valueInputOption="USER_ENTERED", body={"values":dflist}).execute()
-
-    request = sheet.values().update(spreadsheetId=REQUIRED_SPREADSHEET_ID, 
-        range=sheetinfo+"!K2", valueInputOption="USER_ENTERED", body={"values":[dfcolname]}).execute()
-
-    request = sheet.values().update(spreadsheetId=REQUIRED_SPREADSHEET_ID, 
-        range=sheetinfo+"!J3", valueInputOption="USER_ENTERED", body={"values":dfindex}).execute()
+        for i in docs:
+            currencies = list(i._data['currencyrates'].keys())
+            # currencies = i._data['currencyrates'].keys()
+            year = i._data['updated_datetime'].year
+            month = i._data['updated_datetime'].month
+            day = i._data['updated_datetime'].day
+            hour = i._data['updated_datetime'].hour
+            minute = i._data['updated_datetime'].minute
+            tzinfo = i._data['updated_datetime'].tzinfo
+            date = datetime(year, month, day, hour, minute, tzinfo=tzinfo).strftime('%Y-%m-%d')
+            curr_dict[date] = currencies
 
 
+        dataset_dict = {}
+        for i in curr_dict:
+            data_dict = {}
+            for curr in curr_list:
+                if curr in curr_dict[i]:
+                    data_dict[curr] = "yes"
+                else:
+                    data_dict[curr] = "no"
+
+            dataset_dict[i] = data_dict
+
+        df = pd.DataFrame.from_dict(dataset_dict)
+
+        # print (df)
+
+        dfindex = []
+        for i in df.index:
+            dfindex.append([i])
+        dflist = df.values.tolist()
+        dfcolname = df.columns.tolist()
+
+        sheetinfo = "Datetime"
+
+        request = sheet.values().update(spreadsheetId=REQUIRED_SPREADSHEET_ID, 
+            range=sheetinfo+"!K3", valueInputOption="USER_ENTERED", body={"values":dflist}).execute()
+
+        request = sheet.values().update(spreadsheetId=REQUIRED_SPREADSHEET_ID, 
+            range=sheetinfo+"!K2", valueInputOption="USER_ENTERED", body={"values":[dfcolname]}).execute()
+
+        request = sheet.values().update(spreadsheetId=REQUIRED_SPREADSHEET_ID, 
+            range=sheetinfo+"!J3", valueInputOption="USER_ENTERED", body={"values":dfindex}).execute()
+
+    except Exception as e:
+        print (e)
+        file_name = __name__
+        function_name = inspect.currentframe().f_code.co_name
+        subject = "Error on macrokpi project"
+        content = "Error in \n File name: " + str(file_name) + "\n Function: " + str(function_name) + "\n Detailed error: " + str(e)
+        error_email(subject, content)
 
 
-# ###############################################################################
-# ######## Testing Export datetime equity_price_history  ########################
-# ###############################################################################
-# python -c 'from equity_exp import test; test()'
+# ################################################################################################################
+# ######## Checking the last extracted ticker - TO CONFIRM EXTRACTION SCRIPTS ARE RUNNING ########################
+# ################################################################################################################
+# python -c 'from equity_exp import last_imp_data; last_imp_data()'
 
-def test():
+def last_imp_data():
 
-    docs = db.collection('equity_price_history').order_by("updated_datetime", direction=firestore.Query.DESCENDING).stream()
-    print (docs)
+    dataset_list = ['equity_daily_kpi', 'equity_financials', 'equity_price_history']
 
-    for i in docs:
-        print (i)
+    for j in dataset_list:
+
+        docs = db.collection(j).order_by("updated_datetime", direction=firestore.Query.DESCENDING).limit(1).stream()
+
+        for i in docs:
+            datetime = i.to_dict()['updated_datetime'].strftime('%Y-%m-%d %H:%M:%S')
+            ticker = i.to_dict()['ticker']
+            print ("Dataset: " + j + " Ticker: " + ticker + " Downloaded Time: " + str(datetime))
+
+
+
 
