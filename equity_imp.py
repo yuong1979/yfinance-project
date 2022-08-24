@@ -255,7 +255,6 @@ def imp_equity_daily_kpi_fb():
 
 
 
-
 ########################################################################################
 ###########  Export detailed annual and quarterly financials to fb  ####################
 ########################################################################################
@@ -263,7 +262,19 @@ def imp_equity_daily_kpi_fb():
 
 
 def imp_equity_financials_fb():
+
     collection = 'equity_financials'
+
+    #check if the document in the collections latest date extracted is > 30 seconds ago, if so to exit(), if not proceed to run
+    tz_UTC = pytz.timezone('UTC')
+    time_seconds = 30
+    latest_entry = db.collection(collection).order_by("updated_datetime", direction=firestore.Query.DESCENDING).limit(1).get()
+    time_diff = datetime.now(tz_UTC) - latest_entry[0]._data['updated_datetime']
+
+    if time_diff.seconds < time_seconds:
+        print ('exiting because the latest entry has been extracted less than 30 seconds ago')
+        exit()
+
     tz_SG = pytz.timezone('Singapore')
     datetime_SG = datetime.now(tz_SG)
     # hoursbeforeextract = 24
@@ -273,8 +284,8 @@ def imp_equity_financials_fb():
     target_datetime = datetime_SG - timedelta(seconds=secb4extract)
 
     # if what is on record is updated less than 24(hoursbeforeextract) hours ago, we need to get the record for update
-    docs = db.collection(collection).where('updated_datetime', '<=', target_datetime).order_by("updated_datetime", direction=firestore.Query.ASCENDING).get()
-    print (len(docs), "number of entries to update")
+    docs = db.collection(collection).where('updated_datetime', '<=', target_datetime).order_by("updated_datetime", direction=firestore.Query.ASCENDING).stream()
+    # print (len(docs), "number of entries to update") ## does not work with stream
 
     for tick in docs:
         
@@ -329,8 +340,6 @@ def imp_equity_financials_fb():
 
 
 
-
-
 ##########################################################################################################
 ###########  export price history of equity into fb ######################################################
 ##########################################################################################################
@@ -338,8 +347,19 @@ def imp_equity_financials_fb():
 
 
 def imp_equity_price_history_fb():
-    collection = "equity_price_history"
-    # collection = "equity_price_history"
+    
+    collection = 'equity_price_history'
+
+    #check if the document in the collections latest date extracted is > 30 seconds ago, if so to exit(), if not proceed to run
+    tz_UTC = pytz.timezone('UTC')
+    time_seconds = 30
+    latest_entry = db.collection(collection).order_by("updated_datetime", direction=firestore.Query.DESCENDING).limit(1).get()
+    time_diff = datetime.now(tz_UTC) - latest_entry[0]._data['updated_datetime']
+
+    if time_diff.seconds < time_seconds:
+        print ('exiting because the latest entry has been extracted less than 30 seconds ago')
+        exit()
+
     tz_SG = pytz.timezone('Singapore')
     record_time = datetime.now(tz_SG)
 
@@ -355,8 +375,8 @@ def imp_equity_price_history_fb():
 
     # startdate = '2022-08-01'
     # enddate = '2022-08-19'
-    
-    docs = db.collection(collection).where('updated_datetime', '<=', target_datetime).order_by("updated_datetime", direction=firestore.Query.ASCENDING).get()
+
+    docs = db.collection(collection).where('updated_datetime', '<=', target_datetime).order_by("updated_datetime", direction=firestore.Query.ASCENDING).stream()
 
     for doc in docs:
 
@@ -395,6 +415,7 @@ def imp_equity_price_history_fb():
                 }
 
                 db.collection(collection).document(doc.id).set(data, merge=True)
+
         except:
 
             data = {

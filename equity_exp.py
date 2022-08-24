@@ -164,65 +164,72 @@ def exp_equity_daily_kpi_gs():
         error_email(subject, content)
 
 
+
+
+
+
 # ###############################################################################
-# ######## Export datetime of daily equity kpi into google sheets  ##############
+# ######## Export datetime for all datasets into google sheets  #################
 # ###############################################################################
+# python -c 'from equity_exp import exp_dataset_datetime_gs; exp_dataset_datetime_gs()'
 
-############### Running the function from the command line ###############
-# python -c 'from mgt_fin_exp_gs import exp_equity_daily_kpi_datetime_gs; exp_equity_daily_kpi_datetime_gs()'
+def exp_dataset_datetime_gs():
 
+    collection_list = ['equity_daily_kpi','equity_financials','equity_price_history']
 
-
-def exp_equity_daily_kpi_datetime_gs():
-        
-    collection = 'equity_daily_kpi'
-    
     try:
-        #### export required data to google sheets ######
-        docs = db.collection(collection).order_by("updated_datetime", direction=firestore.Query.ASCENDING).stream()
+        for col in collection_list:
 
-        datalist = []
-        for i in docs:
-            try:
-                data = i._data['kpi']
-                data["ticker"] = i._data['ticker']
-                data["tickername"] = i._data['tickername']
-                #got to convert datetime into a format acceptable by google sheets and wont throw error
-                data["updated_datetime"] = hour_rounder(i._data['updated_datetime']).strftime('%Y-%m-%d %H:%M:%S')
-                datalist.append(data)
-            except KeyError:
-                pass
+            # collection = 'equity_daily_kpi'
+            docs = db.collection(col).order_by("updated_datetime", direction=firestore.Query.DESCENDING).stream()
+            #input selected KPIs to analyse    
+            kpi1USD = ['ticker','updated_datetime']
 
-        df = pd.DataFrame(datalist)
-        df.replace(np.nan, '', inplace=True)
+            main_dic = {}
+            for doc in docs:
+                kpi_dic = {}
 
-        ## Selected KPIs including usd values 
-        kpilistselect2 = [
-        'updated_datetime', 'ticker'
-        ]
+                for j in kpi1USD:
+                    try:
+                        kpi_dic[j] = doc._data[j]
+                    except:
+                        kpi_dic[j] = ""
 
-        #change the column location / select the list of columns to be used
-        # df = df[['symbol','sector','currency','returnOnEquity','industry']]
-        df = df[kpilistselect2]
+                main_dic[doc._data['ticker']] = kpi_dic
 
-        df = df.groupby(['updated_datetime']).count()#.sort_values('updated_datetime', ascending=False)
+            df = pd.DataFrame(main_dic)
+            df = df.transpose()
+            df['rounded_updated_datetime'] = df['updated_datetime'].dt.round('60min')  
+            df = df.drop('updated_datetime', axis=1)
+            df = df.groupby(['rounded_updated_datetime']).count()#.sort_values('updated_datetime', ascending=False)
+            df = df.reset_index()
+            ##converting into google sheets acceptable format
+            df['rounded_updated_datetime'] = df['rounded_updated_datetime'].dt.strftime('%Y-%m-%d %H:%M:%S')
 
-        df = df.reset_index()
+            dflist = df.values.tolist()
+            dfcolname = df.columns.tolist()
 
-        #this needs to be fixed, because there are no columns in gs
-        dflist = df.values.tolist()
-        dfcol = df.columns.tolist()
+            sheetinfo = "Datetime"
 
-        sheetinfo = "Datetime"
+            if col == 'equity_daily_kpi':
+                range1 = "!A3"
+                range2 = "!A2"
 
-        #Inject the KPIS into the rows of the info
-        request = sheet.values().update(spreadsheetId=REQUIRED_SPREADSHEET_ID, 
-            range=sheetinfo+"!A2", valueInputOption="USER_ENTERED", body={"values":dflist}).execute()
+            if col == 'equity_financials':
+                range1 = "!D3"
+                range2 = "!D2"
 
+            if col == 'equity_price_history':
+                range1 = "!G3"
+                range2 = "!G2"
 
-        #Inject the KPIS into the rows of the info
-        request = sheet.values().update(spreadsheetId=REQUIRED_SPREADSHEET_ID, 
-            range=sheetinfo+"!A1", valueInputOption="USER_ENTERED", body={"values":[dfcol]}).execute()
+            request = sheet.values().update(spreadsheetId=REQUIRED_SPREADSHEET_ID, 
+                range=sheetinfo+range1, valueInputOption="USER_ENTERED", body={"values":dflist}).execute()
+
+            request = sheet.values().update(spreadsheetId=REQUIRED_SPREADSHEET_ID, 
+                range=sheetinfo+range2, valueInputOption="USER_ENTERED", body={"values":[dfcolname]}).execute()
+
+            print (col, " done!")
 
     except Exception as e:
         print (e)
@@ -234,74 +241,79 @@ def exp_equity_daily_kpi_datetime_gs():
 
 
 
+# ###############################################################################
+# ######## Export datetime for fx update into google sheets  ####################
+# ###############################################################################
+# python -c 'from equity_exp import exp_fx_datetime_gs; exp_fx_datetime_gs()'
+def exp_fx_datetime_gs():
+
+    docs = db.collection(u'fx').get()
+    curr_list = []
+    for i in docs:
+        curr_list.append(i._data['currency'])
+
+    docs = db.collection(u'fxhistorical').order_by("updated_datetime", direction=firestore.Query.DESCENDING).limit(3).stream()
+
+    curr_dict = {}
+
+    for i in docs:
+        currencies = list(i._data['currencyrates'].keys())
+        # currencies = i._data['currencyrates'].keys()
+        year = i._data['updated_datetime'].year
+        month = i._data['updated_datetime'].month
+        day = i._data['updated_datetime'].day
+        hour = i._data['updated_datetime'].hour
+        minute = i._data['updated_datetime'].minute
+        tzinfo = i._data['updated_datetime'].tzinfo
+        date = datetime(year, month, day, hour, minute, tzinfo=tzinfo).strftime('%Y-%m-%d')
+        curr_dict[date] = currencies
+
+
+    dataset_dict = {}
+    for i in curr_dict:
+        data_dict = {}
+        for curr in curr_list:
+            if curr in curr_dict[i]:
+                data_dict[curr] = "yes"
+            else:
+                data_dict[curr] = "no"
+
+        dataset_dict[i] = data_dict
+
+    df = pd.DataFrame.from_dict(dataset_dict)
+
+    # print (df)
+
+    dfindex = []
+    for i in df.index:
+        dfindex.append([i])
+    dflist = df.values.tolist()
+    dfcolname = df.columns.tolist()
+
+    sheetinfo = "Datetime"
+
+    request = sheet.values().update(spreadsheetId=REQUIRED_SPREADSHEET_ID, 
+        range=sheetinfo+"!K3", valueInputOption="USER_ENTERED", body={"values":dflist}).execute()
+
+    request = sheet.values().update(spreadsheetId=REQUIRED_SPREADSHEET_ID, 
+        range=sheetinfo+"!K2", valueInputOption="USER_ENTERED", body={"values":[dfcolname]}).execute()
+
+    request = sheet.values().update(spreadsheetId=REQUIRED_SPREADSHEET_ID, 
+        range=sheetinfo+"!J3", valueInputOption="USER_ENTERED", body={"values":dfindex}).execute()
+
+
+
 
 # ###############################################################################
-# ######## Export datetime of daily equity kpi into google sheets  ##############
+# ######## Testing Export datetime equity_price_history  ########################
 # ###############################################################################
+# python -c 'from equity_exp import test; test()'
 
-############### Running the function from the command line ###############
-# python -c 'from equity_exp import exp_equity_daily_kpi_datetime_gs_test; exp_equity_daily_kpi_datetime_gs_test()'
+def test():
 
+    docs = db.collection('equity_price_history').order_by("updated_datetime", direction=firestore.Query.DESCENDING).stream()
+    print (docs)
 
-
-def exp_equity_daily_kpi_datetime_gs_test():
-
-    collection = 'equity_daily_kpi'
-
-    docs = db.collection(collection).order_by("updated_datetime", direction=firestore.Query.DESCENDING).get()
-    #input selected KPIs to analyse    
-    kpi1USD = ['ticker','updated_datetime']
-
-    main_dic = {}
-    for doc in docs:
-        kpi_dic = {}
-
-        for j in kpi1USD:
-            try:
-                kpi_dic[j] = doc._data[j]
-            except:
-                kpi_dic[j] = ""
-
-        main_dic[doc._data['ticker']] = kpi_dic
-
-    # df = df.groupby(['updated_datetime']).count()#.sort_values('updated_datetime', ascending=False)
-    # df = df.reset_index()
-
-    df = pd.DataFrame(main_dic)
-    df = df.transpose()
-
-
-
-#     np.random.seed(100)
-# df = pd.DataFrame(np.random.choice(['n','y','?'], size=(5,5)), 
-#                                    columns=list('ABCDE'))
-
-
-
-#     print roundTime(datetime.datetime(2012,12,31,23,44,59,1234),roundTo=60*60)
-# 2013-01-01 00:00:00
-
-
-    df = df.groupby(['updated_datetime']).count()#.sort_values('updated_datetime', ascending=False)
-    df = df.reset_index()
-
-
-    print (df)
-
-    # df1 = df.groupby(['industry','sector']).count() #.sort_values('updated_datetime', ascending=False)
-    # df1 = df1.reset_index()
-    # print (df1)
-
-
-    # df2 = df.groupby(['country'])['marketCapUSD'].sum() #.sort_values('updated_datetime', ascending=False)
-    # df2 = df2.reset_index()
-    # print (df2)
-
-
-
-
-
-
-
-
+    for i in docs:
+        print (i)
 

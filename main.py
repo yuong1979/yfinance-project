@@ -1,16 +1,24 @@
 from flask import Flask, render_template, request, redirect, url_for
 from firebase_admin import firestore, credentials, initialize_app
-from mgt_fb_crud import financials_to_gs
-# from mgt_fin_exp_fb import ext_daily_equity_financials_yf_fb
-from equity_imp import imp_equity_daily_kpi_fb
-from equity_exp import exp_equity_daily_kpi_datetime_gs, exp_equity_daily_kpi_gs
 from fx import ext_daily_fx_yf_fb
-from mgt_fin_exp_gs import ext_daily_equity_financials_fb_gs, ext_daily_equity_datetime_fb_gs
 from secret import access_secret
 import json
 from settings import project_id, firebase_database, fx_api_key, firestore_api_key, google_sheets_api_key, schedule_function_key, firebase_auth_api_key
 from email_function import error_email
 import inspect
+# from mgt_fb_crud import financials_to_gs
+# from mgt_fin_exp_fb import ext_daily_equity_financials_yf_fb
+from mgt_fin_exp_gs import ext_daily_equity_financials_fb_gs, ext_daily_equity_datetime_fb_gs
+from equity_exp import exp_dataset_datetime_gs, exp_equity_daily_kpi_gs, exp_fx_datetime_gs
+from equity_imp import imp_equity_daily_kpi_fb, imp_equity_financials_fb, imp_equity_price_history_fb
+
+
+
+
+
+
+        # exp_fx_datetime_gs()
+        # exp_dataset_datetime_gs()
 
 app = Flask(__name__)
 
@@ -43,22 +51,36 @@ pw = cloud_run_apikey
 
 try:
 
+    # runs every one hour
     @app.route("/run_extract_financials_fb")
     def run_extract_financials_fb():
+
+        #extracting daily kpi
         imp_equity_daily_kpi_fb()
+        #extracting financials - only done once a quarter after initial extraction is complete
+        imp_equity_financials_fb()
+        #extracting financials - after initial extraction is complete, change the code to extract daily only
+        imp_equity_price_history_fb()
+
         return redirect(url_for("home"))
 
-
+    # runs every day at 12am
     @app.route("/run_extract_fx_fb")
     def run_extract_fx_fb():
+        #extracting daily fx for rates to use in kpi calculations
         ext_daily_fx_yf_fb()
         return redirect(url_for("home"))
 
-
+    # runs every day at 12pm
     @app.route("/run_extract_fb_gs")
     def run_extract_fb_gs():
-        exp_equity_daily_kpi_datetime_gs()
+        #extracting all datasets datetiem into gs to ensure all neccessary extracted
+        exp_dataset_datetime_gs()
+        #extracting daily kpi into gs
         exp_equity_daily_kpi_gs()
+        #extracting fx datetime into gs to confirm that at least last 3 days for fx is extracted
+        exp_fx_datetime_gs()
+
         return redirect(url_for("home"))
 
 except Exception as e:
