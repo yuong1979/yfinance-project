@@ -14,7 +14,7 @@ from google.cloud.firestore import Client
 from secret import access_secret
 from settings import project_id, firebase_database, fx_api_key, firestore_api_key, google_sheets_api_key, schedule_function_key, firebase_auth_api_key
 from googleapiclient.discovery import build
-from export_gs import export_gs_func
+from export_gs_function import export_gs_func
 
 
 firestore_api_key = access_secret(firestore_api_key, project_id)
@@ -156,10 +156,12 @@ sheet = service.spreadsheets()
 ######################################################################################
 # python -c 'from mgt_fb_crud import migrate_to_test; migrate_to_test()'
 
+# equity_daily_kpi_test
+
 def migrate_to_test():
-    number_entries = 5
-    migrate_to = 'equity_price_history_test'
-    migrate_from = 'equity_price_history'
+    number_entries = 10
+    migrate_to = 'equity_daily_kpi_test'
+    migrate_from = 'equity_daily_kpi'
     tickerlist = db.collection(migrate_from).limit(number_entries).get()
     for tick in tickerlist:
 
@@ -199,10 +201,11 @@ def delete_all_fields():
 ############## Running the function from the command line ###############
 # python -c 'from mgt_fb_crud import ticker_investigation; ticker_investigation()'
 
-ticker = 'DELHIVERY.NS'
+ticker = 'GCO'
 def ticker_investigation():
-    docs = db.collection('tickerlist').where("ticker", "==", ticker).get()
-    print(docs[0]._data['kpi'])
+    docs = db.collection('equity_daily_kpi').where("ticker", "==", ticker).get()
+    # print(docs[0]._data['kpi'])
+    print(docs[0]._data)
 
 
 
@@ -266,7 +269,7 @@ def financials_to_gs():
 
 #DESCENDING
 def pivot_data():
-    docs = db.collection('tickerlisttest').order_by("updated_datetime", direction=firestore.Query.DESCENDING).get()
+    docs = db.collection('equity_daily_kpi').order_by("updated_datetime", direction=firestore.Query.DESCENDING).get()
     #input selected KPIs to analyse    
     kpi1 = ['averageVolume','fullTimeEmployees','returnOnEquity','enterpriseToRevenue','industry','sector','country']
     kpi1USD = ['marketCapUSD', 'ebitdaUSD', 'enterpriseValueUSD', 'grossProfitsUSD', 'totalRevenueUSD', 'totalDebtUSD']
@@ -302,3 +305,92 @@ def pivot_data():
     df2 = df2.reset_index()
     print (df2)
 
+
+
+# export_gs_func(name, df ,sheetinfo)
+
+    # ## Selected KPIs including usd values 
+    # kpilistselect2 = [
+    # 'updated_datetime', 'ticker','tickername',
+    # 'shortName', 'longBusinessSummary','symbol', 'sector', 'industry', 'country', 'marketCap',  
+    # 'returnOnAssets', 'returnOnEquity', 'revenueGrowth', 'revenuePerShare',
+    # 'grossMargins', 'operatingMargins', 'profitMargins',  'ebitdaMargins',
+    # 'forwardPE', 'trailingPE', 'earningsQuarterlyGrowth', 'earningsGrowth', 'priceToSalesTrailing12Months', 
+    # 'trailingEps', 'forwardEps', 
+    # 'pegRatio', 'trailingPegRatio',
+    # 'currentRatio', 'quickRatio', 'debtToEquity', 
+    # 'bookValue', 'enterpriseValue', 'priceToBook', 
+    # 'freeCashflow', 'operatingCashflow', 'dividendYield', 'dividendRate', 
+    # 'totalRevenue', 'grossProfits', 'ebitda', 'totalDebt', 'beta',
+    # 'currency', 'financialCurrency',
+    # 'heldPercentInsiders', 'heldPercentInstitutions', 'isEsgPopulated',
+    # 'trailingAnnualDividendYield', 'trailingAnnualDividendRate', 'fiveYearAvgDividendYield', 'lastDividendValue', 'lastDividendDate',
+    # 'targetMedianPrice',  'targetMeanPrice', 'currentPrice',
+    # 'marketCapUSD', 'enterpriseValueUSD', 'freeCashflowUSD', 'operatingCashflowUSD', 'totalDebtUSD',
+    # 'currentPriceUSD', 'totalRevenueUSD', 'grossProfitsUSD', 'ebitdaUSD'
+    # ]
+
+
+
+
+
+######################################################################################
+####### Calculate the individual ratio ranking vs industry ###########################
+######################################################################################
+# python -c 'from mgt_fb_crud import testing; testing()'
+
+
+
+#DESCENDING
+def testing():
+    docs = db.collection('equity_daily_kpi').stream()
+    #input selected KPIs to analyse    
+    kpi1 = ['industry','sector','country']
+    kpi1USD = ['marketCapUSD', 'ticker']
+
+    main_dic = {}
+    for doc in docs:
+        kpi_dic = {}
+        for j in kpi1:
+            try:
+                kpi_dic[j] = doc._data['kpi'][j]
+            except:
+                kpi_dic[j] = ""
+
+        for j in kpi1USD:
+            try:
+                kpi_dic[j] = doc._data[j]
+            except:
+                kpi_dic[j] = ""
+
+        main_dic[doc._data['ticker']] = kpi_dic
+
+    df = pd.DataFrame(main_dic)
+    df = df.transpose()
+
+    # print (df)
+
+    df1 = df.groupby(['sector']).count() #.sort_values('updated_datetime', ascending=False)
+    df1 = df1.reset_index()
+    print (df1)
+
+
+## design the aggregation process
+
+
+## process
+# - daily runs capture all daily kpi data
+# - next run to do an aggregation by country, sector and industry of the KPIs involved
+# - next run to extract filter sector, industry country on the daily kpi data rank them by KPIs 
+#   1) insert rank into daily kpi data
+#   2) insert average and median kpi of sector/industry into daily kpi data
+
+
+## Steps in building this process
+# - adjust the daily run to insert the country, sector and industry into daily run kpi collection and push that live and observe if working fine
+# - create the collection for country, sector and industry
+# - create the function that updates the aggregation collection for country, sector and industry
+
+###### - think about the creation of this function because it could be tricky
+# = create the function that extracts from daily kpi and cycle through and filter a specific sector/industry and all the ticker by a certain kpi and dump the rank
+#   into the daily run collection

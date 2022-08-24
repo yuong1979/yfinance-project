@@ -14,7 +14,6 @@ from google.cloud.firestore import Client
 from secret import access_secret
 from settings import project_id, firebase_database, fx_api_key, firestore_api_key, google_sheets_api_key, schedule_function_key, firebase_auth_api_key
 from googleapiclient.discovery import build
-from export_gs import export_gs_func
 from email_function import error_email
 import inspect
 
@@ -177,11 +176,26 @@ def imp_equity_daily_kpi_fb():
             ticker = i._data['ticker']
             # print (ticker, "ticker to be extracted")
             companyinfo = yf.Ticker(ticker)
+
+            #essential to import KPIs into collection first because kpis need to be present before its used to convert to USD
             data = {
                 'kpi': companyinfo.info,
                 'updated_datetime': recordtime,
                 'activated': True
             }
+
+            #inserting categories outside the kpi dictionary to enable easy filtering
+            cat_list = ['country','industry','sector']
+
+            for x in cat_list:
+                try:
+                    data[x] = companyinfo.info[x]
+                except:
+                    data[x] = ""
+
+
+            for x in cat_list:
+                data[x] = companyinfo.info[x]
 
             try:
                 currency = companyinfo.info['currency']

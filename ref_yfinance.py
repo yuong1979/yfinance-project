@@ -34,6 +34,8 @@ db = Client(firebase_database, fbcredentials)
 def sample_df_gs():
     companyticker = yf.Ticker("meta")
 
+
+
     # df = companyticker.quarterly_financials
     # print (df)
     # df = companyticker.quarterly_balancesheet
