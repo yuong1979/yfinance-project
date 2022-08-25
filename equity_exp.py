@@ -43,7 +43,7 @@ sheet = service.spreadsheets()
 # ###############################################################################
 
 ############### Running the function from the command line ###############
-# python -c 'from mgt_fin_exp_gs import exp_equity_daily_kpi_gs; exp_equity_daily_kpi_gs()'
+# python -c 'from equity_exp import exp_equity_daily_kpi_gs; exp_equity_daily_kpi_gs()'
 
 def hour_rounder(t):
     # Rounds to nearest hour by adding a timedelta hour if minute >= 30
@@ -61,11 +61,13 @@ def exp_equity_daily_kpi_gs():
         docs = db.collection(collection).order_by("updated_datetime", direction=firestore.Query.ASCENDING).stream()
 
         datalist = []
+
         for i in docs:
+
             try:
                 data = i._data['kpi']
                 data["ticker"] = i._data['ticker']
-                data["tickername"] = i._data['tickername']
+                # data["tickername"] = i._data['tickername']
 
                 #inserting all the kpis into list to be exported to google sheets
                 kpilist = ['marketCapUSD', 'enterpriseValueUSD', 'freeCashflowUSD', 'operatingCashflowUSD', 
@@ -81,17 +83,20 @@ def exp_equity_daily_kpi_gs():
                 #got to convert datetime into a format acceptable by google sheets and wont throw error
                 data["updated_datetime"] = i._data['updated_datetime'].strftime('%Y-%m-%d %H:%M:%S')
                 datalist.append(data)
+
             except KeyError:
                 pass
 
         df = pd.DataFrame(datalist)
+        # print (df)
+
         df.replace(np.nan, '', inplace=True)
 
         ## Complete list of KPIs
         # kpilistcomplete = ['fiftyDayAverage', 'shortPercentOfFloat', 'askSize', 'bid', 'targetLowPrice', 'ask', 'phone', 'grossProfits', 'currentRatio', 'volume', 'trailingEps', 'exchangeDataDelayedBy', 'tradeable', 'category', 'annualHoldingsTurnover', 'regularMarketPrice', 'dayHigh', 'algorithm', 'uuid', 'SandP52WeekChange', 'gmtOffSetMilliseconds', 'revenuePerShare', 'forwardEps', 'headSymbol', 'targetHighPrice', 'priceToSalesTrailing12Months', 'postMarketChange', 'netIncomeToCommon', 'lastFiscalYearEnd', 'startDate', 'underlyingExchangeSymbol', 'marketCap', 'earningsQuarterlyGrowth', 'fundInceptionDate', 'messageBoardId', 'freeCashflow', 'ebitda', 'bookValue', 'revenueQuarterlyGrowth', 'priceHint', '52WeekChange', 'volume24Hr', 'dividendYield', 'forwardPE', 'targetMedianPrice', 'maxAge', 'dateShortInterest', 'fiftyTwoWeekHigh', 'city', 'grossMargins', 'expireDate', 'shortRatio', 'regularMarketSource', 'trailingPegRatio', 'legalType', 'morningStarRiskRating', 'operatingMargins', 'zip', 'regularMarketDayLow', 'website', 'sharesShortPreviousMonthDate', 'enterpriseValue', 'industry', 'debtToEquity', 'averageVolume', 'underlyingSymbol', 'lastCapGain', 'dividendRate', 'preMarketPrice', 'recommendationKey', 'companyOfficers', 'currentPrice', 'preMarketChange', 'earningsGrowth', 'coinMarketCapLink', 'sharesPercentSharesOut', 'maxSupply', 'regularMarketChange', 'financialCurrency', 'regularMarketVolume', 'fromCurrency', 'threeYearAverageReturn', 'twoHundredDayAverage', 'nextFiscalYearEnd', 'returnOnAssets', 'exchangeName', 'address1', 'isEsgPopulated', 'returnOnEquity', 'regularMarketPreviousClose', 'quoteSourceName', 'morningStarOverallRating', 'numberOfAnalystOpinions', 'totalDebt', 'floatShares', 'fullTimeEmployees', 'mostRecentQuarter', 'payoutRatio', 'averageDailyVolume10Day', 'lastMarket', 'totalCashPerShare', 'sharesShortPriorMonth', 'previousClose', 'lastSplitDate', 'open', 'marketState', 'fiveYearAvgDividendYield', 'heldPercentInstitutions', 'fundFamily', 'regularMarketDayHigh', 'operatingCashflow', 'volumeAllCurrencies', 'market', 'regularMarketTime', 'fiveYearAverageReturn', 'quickRatio', 'symbol', 'trailingAnnualDividendYield', 'sharesOutstanding', 'beta', 'postMarketPrice', 'totalAssets', 'yield', 'toCurrency', 'pegRatio', 'circulatingSupply', 'averageDailyVolume3Month', 'annualReportExpenseRatio', 'totalRevenue', 'longName', 'exchange', 'trailingPE', 'recommendationMean', 'lastSplitFactor', 'quoteType', 'country', 'bidSize', 'trailingAnnualDividendRate', 'impliedSharesOutstanding', 'targetMeanPrice', 'ytdReturn', 'longBusinessSummary', 'currency', 'revenueGrowth', 'logo_url', 'sector', 'exchangeTimezoneShortName', 'beta3Year', 'averageVolume10days', 'navPrice', 'exchangeTimezoneName', 'profitMargins', 'totalCash', 'priceToBook', 'lastDividendValue', 'heldPercentInsiders', 'dayLow', 'sharesShort', 'enterpriseToEbitda', 'state', 'regularMarketOpen', 'openInterest', 'exDividendDate', 'lastDividendDate', 'fiftyTwoWeekLow', 'strikePrice', 'ebitdaMargins', 'shortName', 'enterpriseToRevenue', 'fax']
 
         ## Selected KPIs excluding usd 
-        kpilistselect1 = ['updated_datetime', 'ticker','tickername',
+        kpilistselect1 = ['updated_datetime', 'ticker',
         'shortName', 'longBusinessSummary','symbol', 'sector', 'industry', 'country', 'marketCap',  
         'returnOnAssets', 'returnOnEquity', 'revenueGrowth', 'revenuePerShare',
         'grossMargins', 'operatingMargins', 'profitMargins',  'ebitdaMargins',
@@ -117,7 +122,7 @@ def exp_equity_daily_kpi_gs():
 
         ## Selected KPIs including usd values 
         kpilistselect2 = [
-        'updated_datetime', 'ticker','tickername',
+        'updated_datetime', 'ticker',
         'shortName', 'longBusinessSummary','symbol', 'sector', 'industry', 'country', 'marketCap',  
         'returnOnAssets', 'returnOnEquity', 'revenueGrowth', 'revenuePerShare',
         'grossMargins', 'operatingMargins', 'profitMargins',  'ebitdaMargins',
@@ -138,8 +143,8 @@ def exp_equity_daily_kpi_gs():
 
         #change the column location / select the list of columns to be used
         # df = df[['symbol','sector','currency','returnOnEquity','industry']]
-        df = df[kpilistselect2]
 
+        df = df[kpilistselect2]
         dflist = df.values.tolist()
         dfcol = df.columns.tolist()
 

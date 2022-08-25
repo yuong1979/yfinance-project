@@ -412,9 +412,11 @@ def update_industry_aggregates():
 ####### Calculate the individual ratio ranking vs industry ###########################
 ######################################################################################
 
-
-# stop the extraction of financials and plan the financials to be activated only at quarterly.
-# change the extraction for price history so that it downloads only the last three days and test it for running once an hour
+# change the name of the industry to add median and sum prefix to it, if not it will be hard to distinguish in the equity collection kpi
+# set up the aggregator so that it runs once daily
+# set up the function that throws the aggregator numbers into the equity kpi list
+# set up the function that goes through each ticker within each industry to rank its postion against the entire industry and dump the rank back into the kpi list
+ 
 
 
 
