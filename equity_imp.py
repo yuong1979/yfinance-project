@@ -193,10 +193,6 @@ def imp_equity_daily_kpi_fb():
                 except:
                     data[x] = ""
 
-
-            for x in cat_list:
-                data[x] = companyinfo.info[x]
-
             try:
                 currency = companyinfo.info['currency']
             except KeyError:

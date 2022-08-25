@@ -159,7 +159,7 @@ sheet = service.spreadsheets()
 # equity_daily_kpi_test
 
 def migrate_to_test():
-    number_entries = 100
+    number_entries = 500
     migrate_to = 'equity_daily_kpi_test'
     migrate_from = 'equity_daily_kpi'
     tickerlist = db.collection(migrate_from).limit(number_entries).get()
@@ -201,7 +201,7 @@ def delete_all_fields():
 ############## Running the function from the command line ###############
 # python -c 'from mgt_fb_crud import ticker_investigation; ticker_investigation()'
 
-ticker = 'GCO'
+ticker = 'EXAS'
 def ticker_investigation():
     docs = db.collection('equity_daily_kpi').where("ticker", "==", ticker).get()
     # print(docs[0]._data['kpi'])
@@ -345,8 +345,17 @@ def pivot_data():
 def testing():
     docs = db.collection('equity_daily_kpi_test').stream()
     #input selected KPIs to analyse    
-    kpi1 = ['industry','sector','country']
-    kpi1USD = ['marketCapUSD', 'ticker']
+    kpi1 = [
+        'industry','sector','country'
+        'returnOnAssets', 'returnOnEquity', 'revenueGrowth',
+        'grossMargins', 'operatingMargins', 'profitMargins',  'ebitdaMargins',
+        'forwardPE', 'trailingPE', 'earningsQuarterlyGrowth', 'earningsGrowth', 'priceToSalesTrailing12Months', 
+        'pegRatio', 'trailingPegRatio',
+        'currentRatio', 'quickRatio', 'debtToEquity',
+        'dividendRate',
+        'heldPercentInsiders', 'heldPercentInstitutions', 'isEsgPopulated',
+        ]
+    kpi1USD = ['marketCapUSD', 'totalRevenueUSD', 'ticker']
 
     main_dic = {}
     for doc in docs:
@@ -368,12 +377,23 @@ def testing():
     df = pd.DataFrame(main_dic)
     df = df.transpose()
 
-    # print (df)
+    # print (dir(df.groupby(['industry'])))
 
-    df1 = df.groupby(['industry']).count() #.sort_values('updated_datetime', ascending=False)
+    # df1 = df.groupby(['industry']).count() #.sort_values('updated_datetime', ascending=False)
+    # df1 = df1.reset_index()
+    # print (df1)
+
+    # df1 = df.groupby(['industry']).sum() #.sort_values('updated_datetime', ascending=False)
+    # df1 = df1.reset_index()
+    # print (df1)
+
+    df1 = df.groupby(['industry']).median() #.sort_values('updated_datetime', ascending=False)
     df1 = df1.reset_index()
     print (df1)
 
+    # df1 = df.groupby(['industry']).mean() #.sort_values('updated_datetime', ascending=False)
+    # df1 = df1.reset_index()
+    # print (df1)
 
 
 

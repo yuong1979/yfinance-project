@@ -13,7 +13,7 @@ from secret import access_secret
 from settings import project_id, firebase_database, fx_api_key, firestore_api_key, google_sheets_api_key, schedule_function_key, firebase_auth_api_key
 from email_function import error_email
 import inspect
-
+import pytz
 
 firestore_api_key = access_secret(firestore_api_key, project_id)
 firestore_api_key_dict = json.loads(firestore_api_key)
@@ -176,6 +176,12 @@ def exp_equity_daily_kpi_gs():
 def exp_dataset_datetime_gs():
 
     collection_list = ['equity_daily_kpi','equity_financials','equity_price_history']
+    tz_SG = pytz.timezone('Singapore')
+    datetime_SG = datetime.now(tz_SG).strftime('%Y-%m-%d %H:%M:%S')
+    datetime_SG_gs = [datetime_SG]
+    sheetinfo = "Datetime"
+    #clear spreadsheets of old data before inserting new ones
+    service.spreadsheets().values().clear(spreadsheetId=REQUIRED_SPREADSHEET_ID, range=sheetinfo+'!A2:H50').execute()
 
     try:
         for col in collection_list:
@@ -214,20 +220,26 @@ def exp_dataset_datetime_gs():
             if col == 'equity_daily_kpi':
                 range1 = "!A3"
                 range2 = "!A2"
+                range3 = "!B1"
 
             if col == 'equity_financials':
                 range1 = "!D3"
                 range2 = "!D2"
+                range3 = "!E1"
 
             if col == 'equity_price_history':
                 range1 = "!G3"
                 range2 = "!G2"
+                range3 = "!H1"
 
             request = sheet.values().update(spreadsheetId=REQUIRED_SPREADSHEET_ID, 
                 range=sheetinfo+range1, valueInputOption="USER_ENTERED", body={"values":dflist}).execute()
 
             request = sheet.values().update(spreadsheetId=REQUIRED_SPREADSHEET_ID, 
                 range=sheetinfo+range2, valueInputOption="USER_ENTERED", body={"values":[dfcolname]}).execute()
+
+            request = sheet.values().update(spreadsheetId=REQUIRED_SPREADSHEET_ID, 
+                range=sheetinfo+range3, valueInputOption="USER_ENTERED", body={"values":[datetime_SG_gs]}).execute()
 
             print (col, " done!")
 
@@ -253,19 +265,19 @@ def exp_fx_datetime_gs():
         for i in docs:
             curr_list.append(i._data['currency'])
 
-        docs = db.collection(u'fxhistorical').order_by("updated_datetime", direction=firestore.Query.DESCENDING).limit(3).stream()
+        docs = db.collection(u'fxhistorical').order_by("datetime_format", direction=firestore.Query.DESCENDING).limit(3).stream()
 
         curr_dict = {}
 
         for i in docs:
             currencies = list(i._data['currencyrates'].keys())
             # currencies = i._data['currencyrates'].keys()
-            year = i._data['updated_datetime'].year
-            month = i._data['updated_datetime'].month
-            day = i._data['updated_datetime'].day
-            hour = i._data['updated_datetime'].hour
-            minute = i._data['updated_datetime'].minute
-            tzinfo = i._data['updated_datetime'].tzinfo
+            year = i._data['datetime_format'].year
+            month = i._data['datetime_format'].month
+            day = i._data['datetime_format'].day
+            hour = i._data['datetime_format'].hour
+            minute = i._data['datetime_format'].minute
+            tzinfo = i._data['datetime_format'].tzinfo
             date = datetime(year, month, day, hour, minute, tzinfo=tzinfo).strftime('%Y-%m-%d')
             curr_dict[date] = currencies
 
