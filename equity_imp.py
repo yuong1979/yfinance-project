@@ -380,7 +380,8 @@ def imp_equity_price_history_fb():
     target_datetime = record_time - timedelta(seconds=secb4extract)
 
     #### after this has done running to comment this out and use days = 2/3 - instead of dates so far back
-    extraction_start_datetime = record_time - timedelta(days=(365 * 5))
+    #### if you need to extract data a long time back (during a situation when new tickers are added) -> change days to (365 * 5)
+    extraction_start_datetime = record_time - timedelta(days=(3))
     startdate = extraction_start_datetime
     enddate = record_time
 

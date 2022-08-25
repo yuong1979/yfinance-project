@@ -326,9 +326,9 @@ def exp_fx_datetime_gs():
 # ################################################################################################################
 # ######## Checking the last extracted ticker - TO CONFIRM EXTRACTION SCRIPTS ARE RUNNING ########################
 # ################################################################################################################
-# python -c 'from equity_exp import last_imp_data; last_imp_data()'
+# python -c 'from equity_exp import imported_data_details_check; imported_data_details_check()'
 
-def last_imp_data():
+def imported_data_details_check():
 
     dataset_list = ['equity_daily_kpi', 'equity_financials', 'equity_price_history']
 
@@ -339,8 +339,17 @@ def last_imp_data():
         for i in docs:
             datetime = i.to_dict()['updated_datetime'].strftime('%Y-%m-%d %H:%M:%S')
             ticker = i.to_dict()['ticker']
-            print ("Dataset: " + j + " Ticker: " + ticker + " Downloaded Time: " + str(datetime))
+            print ("Latest Dataset: " + j + " Ticker: " + ticker + " Downloaded Time: " + str(datetime))
 
+    dataset_list = ['equity_daily_kpi', 'equity_financials', 'equity_price_history']
 
+    for j in dataset_list:
+
+        docs = db.collection(j).order_by("updated_datetime", direction=firestore.Query.ASCENDING).limit(1).stream()
+
+        for i in docs:
+            datetime = i.to_dict()['updated_datetime'].strftime('%Y-%m-%d %H:%M:%S')
+            ticker = i.to_dict()['ticker']
+            print ("Earliest Dataset: " + j + " Ticker: " + ticker + " Downloaded Time: " + str(datetime))
 
 

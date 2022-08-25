@@ -32,7 +32,7 @@ db = Client(firebase_database, fbcredentials)
 # python -c 'from ref_yfinance import sample_df_gs; sample_df_gs()'
 
 def sample_df_gs():
-    companyticker = yf.Ticker("TSC")
+    companyticker = yf.Ticker("aapl")
 
     print (companyticker.info)
 

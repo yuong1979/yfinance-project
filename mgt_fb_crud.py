@@ -1,3 +1,4 @@
+from opcode import stack_effect
 import pytz
 from bs4 import BeautifulSoup
 import requests
@@ -158,19 +159,22 @@ sheet = service.spreadsheets()
 
 # equity_daily_kpi_test
 
+#ASCENDING or #DESCENDING
 def migrate_to_test():
     number_entries = 500
     migrate_to = 'equity_daily_kpi_test'
     migrate_from = 'equity_daily_kpi'
-    tickerlist = db.collection(migrate_from).limit(number_entries).get()
-    for tick in tickerlist:
 
+    tickerlist = db.collection(migrate_from).order_by("updated_datetime", direction=firestore.Query.DESCENDING).limit(number_entries).stream()
+
+    x=1
+    for tick in tickerlist:
         data_dict = {}
         for j in tick._data:
             data_dict[j] = tick._data[j]
-
         db.collection(migrate_to).document(tick.id).set(data_dict, merge=True)
-
+        print (str(x) + "/" + str(number_entries) + " done")
+        x = x + 1
 
 #############################################################################################################################
 ####### Deleting all the data to tickerdatatest (EXTREMELY DANGEROUS CODE) DOUBLE CHECK B4 RUNNING ##########################
@@ -201,9 +205,9 @@ def delete_all_fields():
 ############## Running the function from the command line ###############
 # python -c 'from mgt_fb_crud import ticker_investigation; ticker_investigation()'
 
-ticker = 'EXAS'
+required_ticker = 'AAPL'
 def ticker_investigation():
-    docs = db.collection('equity_daily_kpi').where("ticker", "==", ticker).get()
+    docs = db.collection('equity_daily_kpi').where("ticker", "==", required_ticker).get()
     # print(docs[0]._data['kpi'])
     print(docs[0]._data)
 
@@ -262,48 +266,6 @@ def financials_to_gs():
 
 
 
-######################################################################################
-####### Pivoting the KPI data into formats that are interesting ######################
-######################################################################################
-# python -c 'from mgt_fb_crud import pivot_data; pivot_data()'
-
-#DESCENDING
-def pivot_data():
-    docs = db.collection('equity_daily_kpi').order_by("updated_datetime", direction=firestore.Query.DESCENDING).get()
-    #input selected KPIs to analyse    
-    kpi1 = ['averageVolume','fullTimeEmployees','returnOnEquity','enterpriseToRevenue','industry','sector','country']
-    kpi1USD = ['marketCapUSD', 'ebitdaUSD', 'enterpriseValueUSD', 'grossProfitsUSD', 'totalRevenueUSD', 'totalDebtUSD']
-
-    main_dic = {}
-    for doc in docs:
-        kpi_dic = {}
-        for j in kpi1:
-            try:
-                kpi_dic[j] = doc._data['kpi'][j]
-            except:
-                kpi_dic[j] = ""
-
-        for j in kpi1USD:
-            try:
-                kpi_dic[j] = doc._data[j]
-            except:
-                kpi_dic[j] = ""
-
-        main_dic[doc._data['ticker']] = kpi_dic
-
-    df = pd.DataFrame(main_dic)
-    df = df.transpose()
-
-    print (df)
-
-    df1 = df.groupby(['industry','sector']).count() #.sort_values('updated_datetime', ascending=False)
-    df1 = df1.reset_index()
-    print (df1)
-
-
-    df2 = df.groupby(['country'])['marketCapUSD'].sum() #.sort_values('updated_datetime', ascending=False)
-    df2 = df2.reset_index()
-    print (df2)
 
 
 
@@ -335,27 +297,27 @@ def pivot_data():
 
 
 ######################################################################################
-####### Calculate the individual ratio ranking vs industry ###########################
+####### Updating industry aggregates #################################################
 ######################################################################################
-# python -c 'from mgt_fb_crud import testing; testing()'
-
-
+# python -c 'from mgt_fb_crud import update_industry_aggregates; update_industry_aggregates()'
 
 #DESCENDING
-def testing():
-    docs = db.collection('equity_daily_kpi_test').stream()
-    #input selected KPIs to analyse    
+agg_collection = 'equity_daily_kpi'
+def update_industry_aggregates():   
+    docs = db.collection(agg_collection).stream()
+    #Kpis that are inside the kpi field
     kpi1 = [
-        'industry','sector','country'
-        'returnOnAssets', 'returnOnEquity', 'revenueGrowth',
+        'industry','sector','country', 
+        'returnOnAssets', 'returnOnEquity', 'revenueGrowth', 'earningsGrowth',
         'grossMargins', 'operatingMargins', 'profitMargins',  'ebitdaMargins',
-        'forwardPE', 'trailingPE', 'earningsQuarterlyGrowth', 'earningsGrowth', 'priceToSalesTrailing12Months', 
+        'forwardPE', 'trailingPE', 'earningsQuarterlyGrowth', 'priceToSalesTrailing12Months', 
         'pegRatio', 'trailingPegRatio',
         'currentRatio', 'quickRatio', 'debtToEquity',
         'dividendRate',
-        'heldPercentInsiders', 'heldPercentInstitutions', 'isEsgPopulated',
+        'heldPercentInsiders', 'heldPercentInstitutions', 'isEsgPopulated', 'fullTimeEmployees'
         ]
-    kpi1USD = ['marketCapUSD', 'totalRevenueUSD', 'ticker']
+    #Kpis that are inside the main field
+    kpi1USD = ['marketCapUSD', 'totalRevenueUSD', 'totalRevenueUSD', 'ebitdaUSD']
 
     main_dic = {}
     for doc in docs:
@@ -377,23 +339,92 @@ def testing():
     df = pd.DataFrame(main_dic)
     df = df.transpose()
 
-    # print (dir(df.groupby(['industry'])))
+    # select the category
+    category='industry'
 
-    # df1 = df.groupby(['industry']).count() #.sort_values('updated_datetime', ascending=False)
-    # df1 = df1.reset_index()
-    # print (df1)
+    df_unique = getattr(df , category).unique()
+    df_unique = pd.DataFrame(df_unique)
+    df_unique = df_unique.rename(columns={0:category})
 
-    # df1 = df.groupby(['industry']).sum() #.sort_values('updated_datetime', ascending=False)
-    # df1 = df1.reset_index()
-    # print (df1)
+    # Calculating Sum for selected categories
+    values = ['marketCapUSD', 'totalRevenueUSD', 'ebitdaUSD', 'fullTimeEmployees']
 
-    df1 = df.groupby(['industry']).median() #.sort_values('updated_datetime', ascending=False)
-    df1 = df1.reset_index()
-    print (df1)
+    for i in values:
 
-    # df1 = df.groupby(['industry']).mean() #.sort_values('updated_datetime', ascending=False)
-    # df1 = df1.reset_index()
-    # print (df1)
+        df_data = pd.DataFrame(df, columns = [category, i])
+        df_data = df_data[(df_data[category] != "") & (df_data[i] != "") & (df_data[i] != 0)]
+        df_data = df_data.groupby([category])[i].sum()
+        df_data = df_data.reset_index(name = i)
+        try:
+            df_merged_sum = pd.merge(df_merged_sum, df_data, how='left', left_on = category, right_on = category)
+        except:
+            df_merged_sum = pd.merge(df_unique, df_data, how='left', left_on = category, right_on = category)
+
+    # Calculating Median for selected categories
+    values = ['grossMargins', 'operatingMargins', 'profitMargins',  'ebitdaMargins', 
+            'returnOnAssets', 'returnOnEquity', 'revenueGrowth', 'earningsGrowth',
+            'currentRatio', 'quickRatio', 'debtToEquity',
+            'heldPercentInsiders', 'heldPercentInstitutions']
+
+    for j in values:
+
+        df_data = pd.DataFrame(df, columns = [category, j])
+
+
+        df_data = df_data[(df_data[category] != "") & (df_data[j] != "") & (df_data[j] != 0)]
+
+        df_data = df_data.groupby([category])[j].median()
+        df_data = df_data.reset_index(name = j)
+        try:
+            df_merged_median = pd.merge(df_merged_median, df_data, how='left', left_on = category, right_on = category)
+        except:
+            df_merged_median = pd.merge(df_unique, df_data, how='left', left_on = category, right_on = category)
+
+    # print (df_merged_median[['industry','currentRatio']].sort_values('industry', ascending=True).head(50))
+
+    # Merging all the data into one dataframe
+    df_merged_all = pd.merge(df_merged_sum, df_merged_median, how='left', left_on = category, right_on = category)
+
+    df = df_merged_all.set_index(category)
+    # consolidating all into a list for iterating and injecting into firestore    
+    cols = df.columns.to_list()
+
+
+    # inserting the data into the equity industry collection
+    collection = 'equity_industry'
+    for index, row in df.iterrows():
+        data = {}
+        for i in cols:
+            categories = index
+            data_dict = {
+                i : row[i]
+            }
+            data.update(data_dict)
+        # print (categories, data)
+        try:
+            # when there are no categories, stop and exit without inserting data
+            db.collection(collection).document(categories).set(data, merge=True)
+        except:
+            pass
+
+ 
+######################################################################################
+####### Calculate the individual ratio ranking vs industry ###########################
+######################################################################################
+
+
+# stop the extraction of financials and plan the financials to be activated only at quarterly.
+# change the extraction for price history so that it downloads only the last three days and test it for running once an hour
+
+
+
+
+
+######################################################################################
+####### Calculate the individual ratio ranking vs industry ###########################
+######################################################################################
+# python -c 'from mgt_fb_crud import testing; testing()'
+
 
 
 
