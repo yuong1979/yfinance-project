@@ -355,6 +355,8 @@ def update_industry_aggregates():
         df_data = df_data[(df_data[category] != "") & (df_data[i] != "") & (df_data[i] != 0)]
         df_data = df_data.groupby([category])[i].sum()
         df_data = df_data.reset_index(name = i)
+        df_data = df_data.rename(columns={ i: "Sum_" + str(i) })
+
         try:
             df_merged_sum = pd.merge(df_merged_sum, df_data, how='left', left_on = category, right_on = category)
         except:
@@ -369,12 +371,11 @@ def update_industry_aggregates():
     for j in values:
 
         df_data = pd.DataFrame(df, columns = [category, j])
-
-
         df_data = df_data[(df_data[category] != "") & (df_data[j] != "") & (df_data[j] != 0)]
-
         df_data = df_data.groupby([category])[j].median()
         df_data = df_data.reset_index(name = j)
+        df_data = df_data.rename(columns={ j: "Median_" + str(j) })
+
         try:
             df_merged_median = pd.merge(df_merged_median, df_data, how='left', left_on = category, right_on = category)
         except:
@@ -386,6 +387,7 @@ def update_industry_aggregates():
     df_merged_all = pd.merge(df_merged_sum, df_merged_median, how='left', left_on = category, right_on = category)
 
     df = df_merged_all.set_index(category)
+
     # consolidating all into a list for iterating and injecting into firestore    
     cols = df.columns.to_list()
 
@@ -408,11 +410,13 @@ def update_industry_aggregates():
             pass
 
  
+
+
+
 ######################################################################################
 ####### Calculate the individual ratio ranking vs industry ###########################
 ######################################################################################
 
-# change the name of the industry to add median and sum prefix to it, if not it will be hard to distinguish in the equity collection kpi
 # set up the aggregator so that it runs once daily
 # set up the function that throws the aggregator numbers into the equity kpi list
 # set up the function that goes through each ticker within each industry to rank its postion against the entire industry and dump the rank back into the kpi list
