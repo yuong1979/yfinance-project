@@ -98,26 +98,26 @@ def migrate_equity_lists_to_datasets():
 
 
 
-# ######################################################################################################################################
-# ####### To DELETE WHEN DONE RUNNING #########################
-# ######################################################################################################################################
-# # python -c 'from equity_imp import migrate_equity_lists_to_equity_price_history; migrate_equity_lists_to_equity_price_history()'
+######################################################################################################################################
+####### to migrate list of equities and framework to new lists - REMOVE MIGRATE_TO when dones to prevent accidental overwrites #######
+######################################################################################################################################
+# python -c 'from equity_imp import migrate_equity_lists_to_equity_calc; migrate_equity_lists_to_equity_calc()'
 
-# def migrate_equity_lists_to_equity_price_history():
-#     migrate_from = 'equity_list'
-#     migrate_to = 'equity_price_history'
+def migrate_equity_lists_to_equity_calc():
+    migrate_from = 'equity_list'
+    migrate_to = 'equity_calc'
 
-#     equity_list = db.collection(migrate_from).get()
-#     for tick in equity_list:
-#         tz_SG = pytz.timezone('Singapore')
-#         datetime_SG = datetime.now(tz_SG)
-#         data_dict = {
-#             'ticker': tick._data['ticker'],
-#             'created_datetime': datetime_SG,
-#             'updated_datetime': datetime_SG,
-#         }
-#         print ("ticker extracted is :", tick._data['ticker'])
-#         db.collection(migrate_to).document(tick.id).set(data_dict, merge=True)
+    equity_list = db.collection(migrate_from).get()
+    for tick in equity_list:
+        tz_SG = pytz.timezone('Singapore')
+        datetime_SG = datetime.now(tz_SG)
+        data_dict = {
+            'ticker': tick._data['ticker'],
+            'created_datetime': datetime_SG,
+            'updated_datetime': datetime_SG,
+        }
+        print ("ticker extracted is :", tick._data['ticker'])
+        db.collection(migrate_to).document(tick.id).set(data_dict, merge=True)
 
 
 
@@ -140,8 +140,27 @@ def currencyclean(currency):
     return currency_cleaned
 
 
-def imp_equity_daily_kpi_fb():
+def last_valid_fx_date():
+    fxdocs = db.collection('fx').get()
+    fx_list = []
+    for j in fxdocs:
+        fx_list.append(j._data['currency'])
 
+    docs = db.collection('fxhistorical').order_by("datetime_format", direction=firestore.Query.DESCENDING).limit(30).get()
+    for i in docs:
+        fx_list_historical = list(i._data['currencyrates'].keys())
+        result =  all(elem in fx_list_historical  for elem in fx_list)
+        if result:
+            # print("fx_list_historical contains all elements in fx_list")
+            date = i._data['datetime_format'].strftime("%Y-%m-%d")
+            break
+        else :
+            # print("fx_list_historical does not contains all elements in fx_list")
+            pass
+    return date
+
+
+def imp_equity_daily_kpi_fb():
 
     collection = 'equity_daily_kpi'
     sleeptime = 5
@@ -207,7 +226,13 @@ def imp_equity_daily_kpi_fb():
                 # print ("the currency converted is ", currency_required)
                 
                 # Lookingup the fx rates to get rates - sometimes rates are not available and need to check previous day's rates
-                # Also we need to make sure that FX is extracted on the specific before this, if not this will not work 
+                # Also we need to make sure that FX is extracted on the specific before this, if not this will not work
+
+                #### to replace the code below to extract the latest date that has fx rates existing
+                fx_date_str= last_valid_fx_date()
+                docs = db.collection('fxhistorical').document(fx_date_str).get()
+                rate = docs._data["currencyrates"][currency_required]
+
                 try:
                     fx_extract_time = recordtime - timedelta(days=1)
                     fx_date_str = fx_extract_time.strftime("%Y-%m-%d")
@@ -226,7 +251,31 @@ def imp_equity_daily_kpi_fb():
                             docs = db.collection('fxhistorical').document(fx_date_str).get()
                             rate = docs._data["currencyrates"][currency_required]
                         except:
-                            pass
+                            try:
+                                fx_extract_time = recordtime - timedelta(days=4)
+                                fx_date_str = fx_extract_time.strftime("%Y-%m-%d")
+                                docs = db.collection('fxhistorical').document(fx_date_str).get()
+                                rate = docs._data["currencyrates"][currency_required]
+                            except:
+                                try:
+                                    fx_extract_time = recordtime - timedelta(days=5)
+                                    fx_date_str = fx_extract_time.strftime("%Y-%m-%d")
+                                    docs = db.collection('fxhistorical').document(fx_date_str).get()
+                                    rate = docs._data["currencyrates"][currency_required]
+                                except:
+                                    try:
+                                        fx_extract_time = recordtime - timedelta(days=5)
+                                        fx_date_str = fx_extract_time.strftime("%Y-%m-%d")
+                                        docs = db.collection('fxhistorical').document(fx_date_str).get()
+                                        rate = docs._data["currencyrates"][currency_required]
+                                    except:
+                                        #### to replace the code below to extract the latest date that has fx rates existing
+                                        fx_date_str= last_valid_fx_date()
+                                        docs = db.collection('fxhistorical').document(fx_date_str).get()
+                                        rate = docs._data["currencyrates"][currency_required]
+
+
+
 
                 # print (rate, "is the rate and it is type is ", type(rate))
                 rate = float(rate)

@@ -1,3 +1,4 @@
+from cmath import nan
 from opcode import stack_effect
 import pytz
 from bs4 import BeautifulSoup
@@ -16,6 +17,8 @@ from secret import access_secret
 from settings import project_id, firebase_database, fx_api_key, firestore_api_key, google_sheets_api_key, schedule_function_key, firebase_auth_api_key
 from googleapiclient.discovery import build
 from export_gs_function import export_gs_func
+
+
 
 
 firestore_api_key = access_secret(firestore_api_key, project_id)
@@ -153,7 +156,7 @@ sheet = service.spreadsheets()
 
 
 ######################################################################################
-####### Migrating the testing ticker data to tickerdatatest ##########################
+####### Migrating the real datasets to testing datasets ##########################
 ######################################################################################
 # python -c 'from mgt_fb_crud import migrate_to_test; migrate_to_test()'
 
@@ -161,9 +164,9 @@ sheet = service.spreadsheets()
 
 #ASCENDING or #DESCENDING
 def migrate_to_test():
-    number_entries = 500
-    migrate_to = 'equity_daily_kpi_test'
-    migrate_from = 'equity_daily_kpi'
+    number_entries = 5
+    migrate_from = 'equity_list'
+    migrate_to = 'equity_calc'
 
     tickerlist = db.collection(migrate_from).order_by("updated_datetime", direction=firestore.Query.DESCENDING).limit(number_entries).stream()
 
@@ -172,7 +175,7 @@ def migrate_to_test():
         data_dict = {}
         for j in tick._data:
             data_dict[j] = tick._data[j]
-        db.collection(migrate_to).document(tick.id).set(data_dict, merge=True)
+        db.collection(migrate_to + str("_test")).document(tick.id).set(data_dict, merge=True)
         print (str(x) + "/" + str(number_entries) + " done")
         x = x + 1
 
@@ -207,9 +210,21 @@ def delete_all_fields():
 
 required_ticker = 'AAPL'
 def ticker_investigation():
-    docs = db.collection('equity_daily_kpi').where("ticker", "==", required_ticker).get()
+    docs = db.collection('equity_calc').where("ticker", "==", required_ticker).get()
     # print(docs[0]._data['kpi'])
     print(docs[0]._data)
+
+
+
+######################################################################################
+####### Count number of entries ######################################################
+######################################################################################
+
+############## Running the function from the command line ###############
+# python -c 'from mgt_fb_crud import counter_rows; counter_rows()'
+def counter_rows():
+    docs = db.collection('equity_list').get()
+    print(len(docs))
 
 
 
@@ -295,154 +310,24 @@ def financials_to_gs():
 
 
 
-
-######################################################################################
-####### Updating industry aggregates #################################################
-######################################################################################
-# python -c 'from mgt_fb_crud import update_industry_aggregates; update_industry_aggregates()'
-
-#DESCENDING
-agg_collection = 'equity_daily_kpi'
-def update_industry_aggregates():   
-    docs = db.collection(agg_collection).stream()
-    #Kpis that are inside the kpi field
-    kpi1 = [
-        'industry','sector','country', 
-        'returnOnAssets', 'returnOnEquity', 'revenueGrowth', 'earningsGrowth',
-        'grossMargins', 'operatingMargins', 'profitMargins',  'ebitdaMargins',
-        'forwardPE', 'trailingPE', 'earningsQuarterlyGrowth', 'priceToSalesTrailing12Months', 
-        'pegRatio', 'trailingPegRatio',
-        'currentRatio', 'quickRatio', 'debtToEquity',
-        'dividendRate',
-        'heldPercentInsiders', 'heldPercentInstitutions', 'isEsgPopulated', 'fullTimeEmployees'
-        ]
-    #Kpis that are inside the main field
-    kpi1USD = ['marketCapUSD', 'totalRevenueUSD', 'totalRevenueUSD', 'ebitdaUSD']
-
-    main_dic = {}
-    for doc in docs:
-        kpi_dic = {}
-        for j in kpi1:
-            try:
-                kpi_dic[j] = doc._data['kpi'][j]
-            except:
-                kpi_dic[j] = ""
-
-        for j in kpi1USD:
-            try:
-                kpi_dic[j] = doc._data[j]
-            except:
-                kpi_dic[j] = ""
-
-        main_dic[doc._data['ticker']] = kpi_dic
-
-    df = pd.DataFrame(main_dic)
-    df = df.transpose()
-
-    # select the category
-    category='industry'
-
-    df_unique = getattr(df , category).unique()
-    df_unique = pd.DataFrame(df_unique)
-    df_unique = df_unique.rename(columns={0:category})
-
-    # Calculating Sum for selected categories
-    values = ['marketCapUSD', 'totalRevenueUSD', 'ebitdaUSD', 'fullTimeEmployees']
-
-    for i in values:
-
-        df_data = pd.DataFrame(df, columns = [category, i])
-        df_data = df_data[(df_data[category] != "") & (df_data[i] != "") & (df_data[i] != 0)]
-        df_data = df_data.groupby([category])[i].sum()
-        df_data = df_data.reset_index(name = i)
-        df_data = df_data.rename(columns={ i: "Sum_" + str(i) })
-
-        try:
-            df_merged_sum = pd.merge(df_merged_sum, df_data, how='left', left_on = category, right_on = category)
-        except:
-            df_merged_sum = pd.merge(df_unique, df_data, how='left', left_on = category, right_on = category)
-
-    # Calculating Median for selected categories
-    values = ['grossMargins', 'operatingMargins', 'profitMargins',  'ebitdaMargins', 
-            'returnOnAssets', 'returnOnEquity', 'revenueGrowth', 'earningsGrowth',
-            'currentRatio', 'quickRatio', 'debtToEquity',
-            'heldPercentInsiders', 'heldPercentInstitutions']
-
-    for j in values:
-
-        df_data = pd.DataFrame(df, columns = [category, j])
-        df_data = df_data[(df_data[category] != "") & (df_data[j] != "") & (df_data[j] != 0)]
-        df_data = df_data.groupby([category])[j].median()
-        df_data = df_data.reset_index(name = j)
-        df_data = df_data.rename(columns={ j: "Median_" + str(j) })
-
-        try:
-            df_merged_median = pd.merge(df_merged_median, df_data, how='left', left_on = category, right_on = category)
-        except:
-            df_merged_median = pd.merge(df_unique, df_data, how='left', left_on = category, right_on = category)
-
-    # print (df_merged_median[['industry','currentRatio']].sort_values('industry', ascending=True).head(50))
-
-    # Merging all the data into one dataframe
-    df_merged_all = pd.merge(df_merged_sum, df_merged_median, how='left', left_on = category, right_on = category)
-
-    df = df_merged_all.set_index(category)
-
-    # consolidating all into a list for iterating and injecting into firestore    
-    cols = df.columns.to_list()
-
-
-    # inserting the data into the equity industry collection
-    collection = 'equity_industry'
-    for index, row in df.iterrows():
-        data = {}
-        for i in cols:
-            categories = index
-            data_dict = {
-                i : row[i]
-            }
-            data.update(data_dict)
-        # print (categories, data)
-        try:
-            # when there are no categories, stop and exit without inserting data
-            db.collection(collection).document(categories).set(data, merge=True)
-        except:
-            pass
-
  
 
 
+#things to do
+# add the country median sum aggregator by changing the industry one
+# add email notifications to the industry median sum aggregator
+# add email notifications to the country median sum aggregator
+# change email notifications to include the ticker when facing an error - to the daily kpi equity extraction
+# set up the aggregators so it runs once daily
+# dump the industry median and sum kpi into the companies associated with the industry into equities kpi add
+# add dates to all the new functions and tables
 
-######################################################################################
-####### Calculate the individual ratio ranking vs industry ###########################
-######################################################################################
-
-# set up the aggregator so that it runs once daily
-# set up the function that throws the aggregator numbers into the equity kpi list
-# set up the function that goes through each ticker within each industry to rank its postion against the entire industry and dump the rank back into the kpi list
- 
-
-
-
-
-
-######################################################################################
-####### Calculate the individual ratio ranking vs industry ###########################
-######################################################################################
-# python -c 'from mgt_fb_crud import testing; testing()'
-
-
-
-
-## design the aggregation process
 
 
 ## process
 # - daily runs capture all daily kpi data
 # - next run to do an aggregation by country, sector and industry of the KPIs involved
 # - next run to extract filter sector, industry country on the daily kpi data rank them by KPIs 
-#   1) insert rank into daily kpi data
-#   2) insert average and median kpi of sector/industry into daily kpi data
 
 
 ## Steps in building this process
@@ -450,6 +335,6 @@ def update_industry_aggregates():
 # - create the collection for country, sector and industry
 # - create the function that updates the aggregation collection for country, sector and industry
 
-###### - think about the creation of this function because it could be tricky
-# = create the function that extracts from daily kpi and cycle through and filter a specific sector/industry and all the ticker by a certain kpi and dump the rank
-#   into the daily run collection
+
+
+

@@ -185,7 +185,7 @@ def ext_daily_fx_yf_fb():
         tz_SG = pytz.timezone('Singapore')
         end_date = datetime.now(tz_SG)
         # extracting the last three days in case the last 3 days fx was updated
-        start_date = end_date - timedelta(days=3)
+        start_date = end_date - timedelta(days=15)
         start_date_str = start_date.strftime("%Y-%m-%d")
         end_date_str = end_date.strftime("%Y-%m-%d")
 
@@ -291,3 +291,6 @@ def testing():
 #     if not db.collection('fx').where("currency", "==", i).get():
 #         data={'currency': i, 'rate': 0, 'activated': True}
 #         db.collection('fx').add(data)
+
+
+
