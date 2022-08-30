@@ -16,6 +16,8 @@ import yfinance as yf
 from firebase_admin import firestore
 from email_function import error_email
 import inspect
+from bs4 import BeautifulSoup
+import re
 
 google_sheets_api_key = access_secret(google_sheets_api_key, project_id)
 google_sheets_api_key_dict = json.loads(google_sheets_api_key)
@@ -247,39 +249,122 @@ def view_daily_fx_fb():
 
 
 
-
-
-
 # #######################################################################################################
-# ############### Check the document if needs to be extracted ###########################################
+# ############### Inserting FX into fx daily manually ###################################################
 # #######################################################################################################
-# python -c 'from fx import testing; testing()'
+# python -c 'from fx import manual_inserting_fx; manual_inserting_fx()'
+
+def manual_inserting_fx():
+    
+    ### inserting the data from xe.com instead of yfinance
+
+    #input formet -> year, month, date
+    idate = datetime(2022, 8, 28)
+
+    idate = idate.replace(hour=8, minute=0)
+    hist_datetime = datetime.combine(idate, datetime.min.time())
+    hist_input_date = idate.strftime("%Y-%m-%d")
+
+    # print (hist_datetime)
+    # print (hist_input_date)
+
+    docs = db.collection(u'fx').stream()
+
+    currencyrates = {}
+    for i in docs:
+        print (i._data['currency'])
+        currency = i._data['currency']
+
+        target_site = "https://www.xe.com/currencyconverter/convert/?Amount=1&From=USD&To="+currency
+        source = requests.get(target_site).text
+        soup = BeautifulSoup(source, 'lxml')
+        regex = re.compile('.*result__BigRate*')
+        target = soup.find(class_=regex).get_text().split()[0].replace(',',"")
+        currencyrates[currency] = target
+
+        time.sleep(1)
+
+    data = {
+        "currencyrates" : currencyrates,
+        "datetime_format" : hist_datetime,
+        "created_datetime": firestore.SERVER_TIMESTAMP,
+        "updated_datetime" : firestore.SERVER_TIMESTAMP
+            }
+    print (data)
+
+    db.collection(u'fxhistorical').document(hist_input_date).set(data, merge=True)
 
 
-def testing():
 
-    companyticker = yf.Ticker("meta")
-    print (companyticker.recommendations['To Grade'].value_counts())
-    print (companyticker.financials, 'companyticker.financials')
 
-    # price history
-    hist = companyticker.history(period="max")
-    print (hist, 'historical price')
 
-    # pnl - detailed
-    print (companyticker._financials, 'companyticker._financials')
+# def hardcode_manual_inserting_fx():
 
-    # pnl - summarized
-    print (companyticker.financials, 'companyticker.financials')
 
-    # pnl - cashflow
-    print (companyticker.cashflow, 'companyticker.cashflow')
+#     #input formet -> year, month, date
+#     idate = datetime(2022, 8, 27)
 
-    # revenue and earnings - last 4 years
-    print (companyticker.earnings, 'companyticker.earnings')
+#     idate = idate.replace(hour=8, minute=0)
+#     hist_datetime = datetime.combine(idate, datetime.min.time())
+#     hist_input_date = idate.strftime("%Y-%m-%d")
 
-    # balance sheet
-    print (companyticker.balancesheet, 'companyticker.balancesheet')
+#     print (hist_datetime)
+#     print (hist_input_date)
+
+#     currencyrates = {
+#         # currency : rate,
+#         'INR': 79.754312,
+#         'CLP': 882.53974,
+#         'SGD': 1.39612,
+#         'IDR': 14853.634,
+#         'MYR': 4.4840377,
+#         'NZD': 1.6258903,
+#         'CZK': 24.59227,
+#         'MXN': 19.98203,
+#         'BRL': 5.0290423,
+#         'PLN': 4.7349729,
+#         'RUB': 61.586436,
+#         'PHP': 56.225248,
+#         'NOK': 9.7452844,
+#         'GBP': 0.85443127,
+#         'HKD': 7.8481615,
+#         'TRY': 18.187447,
+#         'EUR': 0.9999511,
+#         'JPY': 138.51742,
+#         'SEK': 10.669302,
+#         'COP': 4366.5648,
+#         'NGN': 422.20178,
+#         'THB': 36.403456,
+#         'CHF': 0.96719384,
+#         'DKK': 7.4372877,
+#         'PEN': 3.8323979,
+#         'SAR': 3.75,
+#         'CAD': 1.300628,
+#         'ZAR': 16.837043,
+#         'TWD': 30.449339,
+#         'HUF': 408.42517,
+#         'KRW': 1347.5911,
+#         'AUD': 1.4485133,
+#         'ISK': 141.87397,
+#         'CNY': 6.9168799,
+#         'ILS': 3.3161405,
+#         'ARS': 138.30844,
+#         #usd does not exist in fx so it has to be added separately
+#         'USD': 1
+#     }
+#     data = {
+#         "currencyrates" : currencyrates,
+#         "datetime_format" : hist_datetime,
+#         "created_datetime": firestore.SERVER_TIMESTAMP,
+#         "updated_datetime" : firestore.SERVER_TIMESTAMP
+#             }
+#     print (data)
+
+#     # #inserting the data into fx historical
+#     # db.collection(u'fxhistorical').document(hist_input_date).set(data, merge=True)
+
+
+
 
 ########################################################################################################
 ########################### Adding to the currency list ################################################

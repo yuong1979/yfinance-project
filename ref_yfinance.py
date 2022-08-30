@@ -36,7 +36,38 @@ def sample_df_gs():
 
     print (companyticker.info)
 
+# #######################################################################################################
+# ############### Check the document if needs to be extracted ###########################################
+# #######################################################################################################
+# python -c 'from fx import testing; testing()'
 
+
+def testing():
+
+    companyticker = yf.Ticker("meta")
+    print (companyticker.recommendations['To Grade'].value_counts())
+    print (companyticker.financials, 'companyticker.financials')
+
+    # price history
+    hist = companyticker.history(period="max")
+    print (hist, 'historical price')
+
+    # pnl - detailed
+    print (companyticker._financials, 'companyticker._financials')
+
+    # pnl - summarized
+    print (companyticker.financials, 'companyticker.financials')
+
+    # pnl - cashflow
+    print (companyticker.cashflow, 'companyticker.cashflow')
+
+    # revenue and earnings - last 4 years
+    print (companyticker.earnings, 'companyticker.earnings')
+
+    # balance sheet
+    print (companyticker.balancesheet, 'companyticker.balancesheet')
+
+    
 
     # df = companyticker.quarterly_financials
     # print (df)

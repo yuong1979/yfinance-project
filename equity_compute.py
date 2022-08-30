@@ -9,8 +9,8 @@ import pandas as pd
 import numpy as np
 import pytz
 from cmath import nan
-
-
+from firebase_admin import firestore
+import time
 
 firestore_api_key = access_secret(firestore_api_key, project_id)
 firestore_api_key_dict = json.loads(firestore_api_key)
@@ -118,23 +118,30 @@ def update_industry_aggregates():
     # consolidating all into a list for iterating and injecting into firestore    
     cols = df.columns.to_list()
 
+    tz_SG = pytz.timezone('Singapore')
 
     # inserting the data into the equity industry collection
     collection = 'equity_' + category
     for index, row in df.iterrows():
-        data = {}
+        recordtime = datetime.now(tz_SG)
+        data = {
+            'daily_agg_record_time' : recordtime
+        }
+        dataset = {}
         for i in cols:
             categories = index
             data_dict = {
                 i : row[i]
             }
-            data.update(data_dict)
+            dataset.update(data_dict)
+        data['daily_agg'] = dataset
         # print (categories, data)
         try:
             # when there are no categories, stop and exit without inserting data
             db.collection(collection).document(categories).set(data, merge=True)
         except:
             pass
+
 
  
 
@@ -251,17 +258,23 @@ def update_country_aggregates():
     # consolidating all into a list for iterating and injecting into firestore    
     cols = df.columns.to_list()
 
+    tz_SG = pytz.timezone('Singapore')
 
     # inserting the data into the equity industry collection
     collection = 'equity_' + category
     for index, row in df.iterrows():
-        data = {}
+        recordtime = datetime.now(tz_SG)
+        data = {
+            'daily_agg_record_time' : recordtime
+        }
+        dataset = {}
         for i in cols:
             categories = index
             data_dict = {
                 i : row[i]
             }
-            data.update(data_dict)
+            dataset.update(data_dict)
+        data['daily_agg'] = dataset
         # print (categories, data)
         try:
             # when there are no categories, stop and exit without inserting data
@@ -295,6 +308,10 @@ def update_country_aggregates():
 ####### Function that dumps aggregator numbers and rankings into equity daily KPI list - WORKS ALREADY ############
 ###################################################################################################################
 # python -c 'from equity_compute import equity_kpi_ranker; equity_kpi_ranker()'
+
+
+
+
 
 
 def equity_kpi_ranker():
@@ -356,7 +373,12 @@ def equity_kpi_ranker():
     # df.to_csv('testdata.csv')
 
 
-
+#             'industry': '',
+#             'industry_data': '',
+#             'ranking_data': '',
+#             'daily_industry_rank_updated_datetime': recordtime,
+#             'daily_industry_agg_updated_datetime': recordtime
+####          equity_daily_agg
 
     ##################################################################
     # aggregating and converting the data into the required rankings #
@@ -421,27 +443,30 @@ def equity_kpi_ranker():
 
 
 
-
     ################################################
     # dumping the ranked kpi data into equity_calc #
     ################################################
 
-    unique_ticker_list = final_df['ticker'].unique()
     unique_kpi_list = final_df['kpi'].unique()
-    ticker_count = len(unique_ticker_list)
 
     tz_SG = pytz.timezone('Singapore')
     
-    count = 0
-    for ticker in unique_ticker_list:
-        recordtime = datetime.now(tz_SG)
+    # Change this to ranking_updated_datetime after running for the first time
+    docs = db.collection('equity_daily_agg').order_by("daily_industry_rank_updated_datetime", direction=firestore.Query.ASCENDING).stream()
 
-        data = {'ticker': ticker}
+    count = 0
+    ### replace the below
+    for ticker in docs:
+
+        recordtime = datetime.now(tz_SG)
+        tickername = ticker._data['ticker']
+
+        data = {}
 
         rankdataset = {}
         for kpi in unique_kpi_list:
             
-            kpis_required = final_df.loc[ (final_df['ticker'] == ticker) & (final_df['kpi'] == kpi) , ["rank", "rank_%"]]
+            kpis_required = final_df.loc[ (final_df['ticker'] == tickername) & (final_df['kpi'] == kpi) , ["rank", "rank_%"]]
 
             try:
                 rank = kpis_required.values[0][0]
@@ -456,39 +481,110 @@ def equity_kpi_ranker():
             rankdataset[rank_kpi] = rank
             rankdataset[rank_percentage_kpi] = rank_percentage
 
-        data['ranking'] = rankdataset
-        data['ranking_updated_datetime'] = recordtime
+        data['ranking_data'] = rankdataset
+        data['daily_industry_rank_updated_datetime'] = recordtime
         data['activate'] = True
 
-        # print (data)
+        db.collection('equity_daily_agg').document(ticker.id).set(data, merge=True)
 
-        ticker_get = db.collection('equity_calc').where('ticker' , '==' , ticker).get()
-        db.collection('equity_calc').document(ticker_get[0].id).set(data, merge=True)
-
-
-        print (str(count) + "/" + str(ticker_count) , ticker)
+        print (str(count) , tickername)
         count = count + 1
         
     print ("dumped ranked data into equity_calc")
 
 
 
-##################################################################################################
-################### dumping the median/sum industry data into equity add #########################
-##################################################################################################
-# python -c 'from equity_compute import equity_industry_average; equity_industry_average()'
 
+
+
+
+
+
+
+
+
+# ##################################################################################################
+# ################### To create a clean equity_daily_agg database ##################################
+# ##################################################################################################
+# # python -c 'from equity_compute import creating_equity_daily_agg; creating_equity_daily_agg()'
+
+# # DESCENDING
+# # ASCENDING
+
+# #ASCENDING or #DESCENDING
+# def creating_equity_daily_agg():
+#     tz_SG = pytz.timezone('Singapore')
+#     migrate_from = 'equity_list'
+#     migrate_to = 'equity_daily_agg'
+
+#     tickerlist = db.collection(migrate_from).order_by("updated_datetime", direction=firestore.Query.DESCENDING).stream()
+
+#     x=1
+#     for tick in tickerlist:
+#         data_dict = {}
+#         recordtime = datetime.now(tz_SG)
+
+#         ticker = tick._data['ticker']
+#         tickername = tick._data['tickername']
+#         # print (tick._data('tickername'))
+
+#         data = {
+#             'activated': True,
+#             'ticker': ticker,
+#             'tickername': tickername,
+#             'industry': '',
+#             'industry_data': '',
+#             'ranking_data': '',
+#             'daily_industry_rank_updated_datetime': recordtime,
+#             'daily_industry_agg_updated_datetime': recordtime
+#         }
+        
+#         db.collection(migrate_to).document(tick.id).set(data, merge=True)
+#         print (str(x) + " done")
+#         x = x + 1
+
+
+
+####################################################################################################################
+################### dumping the median/sum (aggregates) industry data into equity_daily_agg ########################
+####################################################################################################################
+
+# python -c 'from equity_compute import insert_industry_agg_data; insert_industry_agg_data()'
+def insert_industry_agg_data():
+
+    tz_SG = pytz.timezone('Singapore')
+    
     # equity_docs = db.collection('equity_daily_kpi').where('industry' , '==' , industry_name).stream()
-def equity_industry_average():
+     
+    # Change this to industry_data_updated_datetime after running for the first time
+    e_docs = db.collection('equity_daily_agg').order_by("daily_industry_agg_updated_datetime", direction=firestore.Query.ASCENDING).stream()
 
-    equity_docs = db.collection('equity_daily_kpi').limit(5).stream()
-
-    for i in equity_docs:
+    x = 0
+    for i in e_docs:
         ticker = i._data['ticker']
-        industry = i._data['industry']
-        print (i._data['ticker'])
 
-        industry_docs = db.collection('equity_industry').where('industry' , '==' , industry).get()
+        ind = db.collection('equity_daily_kpi').document(i.id).get()
+        industry = ind._data['industry']
 
-        print (industry_docs)
- 
+        try:
+            ind_data = db.collection('equity_industry').document(industry).get()
+            ind_data = ind_data._data
+        except:
+            ind_data = ""
+
+        recordtime = datetime.now(tz_SG)
+        data = {
+            'industry': industry,
+            'industry_data': ind_data,
+            'daily_industry_agg_updated_datetime': recordtime
+        }
+
+        # print (data)
+
+        db.collection('equity_daily_agg').document(i.id).set(data, merge=True)
+
+        print (x, ticker)
+        x = x + 1
+
+
+

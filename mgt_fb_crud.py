@@ -317,7 +317,6 @@ def financials_to_gs():
 # add the country median sum aggregator by changing the industry one
 # add email notifications to the industry median sum aggregator
 # add email notifications to the country median sum aggregator
-# change email notifications to include the ticker when facing an error - to the daily kpi equity extraction
 # set up the aggregators so it runs once daily
 # dump the industry median and sum kpi into the companies associated with the industry into equities kpi add
 # add dates to all the new functions and tables

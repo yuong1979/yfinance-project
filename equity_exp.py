@@ -357,4 +357,8 @@ def imported_data_details_check():
             ticker = i.to_dict()['ticker']
             print ("Earliest Dataset: " + j + " Ticker: " + ticker + " Downloaded Time: " + str(datetime))
 
+    docs = db.collection('fxhistorical').order_by("datetime_format", direction=firestore.Query.DESCENDING).limit(1).get()
+
+    print ("Latest FX Dataset: " + docs[0]._data['datetime_format'].strftime('%Y-%m-%d'))
+
 

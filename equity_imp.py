@@ -28,7 +28,7 @@ db = Client(firebase_database, fbcredentials)
 
 
 ##################################################################################################
-######### Updating tickerlist from companiesmarketcap.com into firebase ##########################
+######### Updating equity_list from companiesmarketcap.com into firebase ##########################
 ##################################################################################################
 # python -c 'from equity_imp import update_equity_list; update_equity_list()'
 
@@ -306,8 +306,16 @@ def imp_equity_daily_kpi_fb():
         print (e)
         file_name = __name__
         function_name = inspect.currentframe().f_code.co_name
-        subject = "Error on macrokpi project"
-        content = "Error in \n File name: " + str(file_name) + "\n Function: " + str(function_name) + "\n Detailed error: " + str(e)
+        subject = "Error on equity_daily_kpi extract"
+        try:
+            ticker = ticker
+        except:
+            ticker = "None"
+        content = "Error in \n File name: "+ str(file_name) \
+             + "\n Function: " + str(function_name) \
+              + "\n Detailed error: " + str(e) \
+                + "\n Error data: " + str(ticker)
+
         error_email(subject, content)
 
 
@@ -335,68 +343,84 @@ def imp_equity_financials_fb():
         print ('exiting because the latest entry has been extracted less than 30 seconds ago')
         exit()
 
-    tz_SG = pytz.timezone('Singapore')
-    datetime_SG = datetime.now(tz_SG)
-    # hoursbeforeextract = 24
-    # secb4extract = hoursbeforeextract * 60 * 60
-    hoursbeforeextract = 1
-    secb4extract = hoursbeforeextract * 60 * 1
-    target_datetime = datetime_SG - timedelta(seconds=secb4extract)
+    try:
 
-    # if what is on record is updated less than 24(hoursbeforeextract) hours ago, we need to get the record for update
-    docs = db.collection(collection).where('updated_datetime', '<=', target_datetime).order_by("updated_datetime", direction=firestore.Query.ASCENDING).stream()
-    # print (len(docs), "number of entries to update") ## does not work with stream
+        tz_SG = pytz.timezone('Singapore')
+        datetime_SG = datetime.now(tz_SG)
+        # hoursbeforeextract = 24
+        # secb4extract = hoursbeforeextract * 60 * 60
+        hoursbeforeextract = 1
+        secb4extract = hoursbeforeextract * 60 * 1
+        target_datetime = datetime_SG - timedelta(seconds=secb4extract)
 
-    for tick in docs:
-        
-        print ("Updating " + str(tick._data['ticker']))
+        # if what is on record is updated less than 24(hoursbeforeextract) hours ago, we need to get the record for update
+        docs = db.collection(collection).where('updated_datetime', '<=', target_datetime).order_by("updated_datetime", direction=firestore.Query.ASCENDING).stream()
+        # print (len(docs), "number of entries to update") ## does not work with stream
 
-        recordtime = datetime.now(tz_SG)
-        ticker = tick._data['ticker']
-        companyinfo = yf.Ticker(ticker)
+        for tick in docs:
+            
+            print ("Updating " + str(tick._data['ticker']))
 
-        time_series_list = ['quarterly_financials','quarterly_balancesheet',
-                            'quarterly_cashflow','financials','balancesheet','cashflow']
-        dataset = {}
+            recordtime = datetime.now(tz_SG)
+            ticker = tick._data['ticker']
+            companyinfo = yf.Ticker(ticker)
 
-        for kpi in time_series_list:
-            df = getattr(companyinfo, kpi)
-            df = df.to_dict()
-            date_list = list(df.keys())
-            val_list = list(df.values())
-            data_ind = {}
-            date_ind = {}
+            time_series_list = ['quarterly_financials','quarterly_balancesheet',
+                                'quarterly_cashflow','financials','balancesheet','cashflow']
+            dataset = {}
 
-            try:
-                #relabelling the dates without time and adding them to a dictionary
-                j = 0
-                for date in date_list:
-                    fin_date = date.strftime("%Y-%m-%d")
-                    fin_values = val_list[j]
-                    data_ind[fin_date] = fin_values
-                    j = j + 1
-                
-                #looping through and financials and inserting them
-                date_ind[kpi] = data_ind
+            for kpi in time_series_list:
+                df = getattr(companyinfo, kpi)
+                df = df.to_dict()
+                date_list = list(df.keys())
+                val_list = list(df.values())
+                data_ind = {}
+                date_ind = {}
 
-            except:
-                #looping through and financials and inserting them
-                date_ind[kpi] = {}
+                try:
+                    #relabelling the dates without time and adding them to a dictionary
+                    j = 0
+                    for date in date_list:
+                        fin_date = date.strftime("%Y-%m-%d")
+                        fin_values = val_list[j]
+                        data_ind[fin_date] = fin_values
+                        j = j + 1
+                    
+                    #looping through and financials and inserting them
+                    date_ind[kpi] = data_ind
 
-            #adding the quarterly/annually financials
-            dataset.update(date_ind)
+                except:
+                    #looping through and financials and inserting them
+                    date_ind[kpi] = {}
 
-        data = {
-            'activated': True,
-            "time_series_financials": dataset,
-            'updated_datetime': recordtime
-        }
+                #adding the quarterly/annually financials
+                dataset.update(date_ind)
 
-        #updating data into firebase
-        db.collection(collection).document(tick.id).set(data, merge=True)
-        print ("Updated " + str(tick._data['ticker']))
+            data = {
+                'activated': True,
+                "time_series_financials": dataset,
+                'updated_datetime': recordtime
+            }
 
+            #updating data into firebase
+            db.collection(collection).document(tick.id).set(data, merge=True)
+            print ("Updated " + str(tick._data['ticker']))
 
+    except Exception as e:
+        print (e)
+        file_name = __name__
+        function_name = inspect.currentframe().f_code.co_name
+        subject = "Error on equity_financials extract"
+        try:
+            ticker = ticker
+        except:
+            ticker = "None"
+        content = "Error in \n File name: "+ str(file_name) \
+             + "\n Function: " + str(function_name) \
+              + "\n Detailed error: " + str(e) \
+                + "\n Error data: " + str(ticker)
+
+        error_email(subject, content)
 
 
 
@@ -420,75 +444,92 @@ def imp_equity_price_history_fb():
         print ('exiting because the latest entry has been extracted less than 30 seconds ago')
         exit()
 
-    tz_SG = pytz.timezone('Singapore')
-    record_time = datetime.now(tz_SG)
+    try:
 
-    hoursbeforeextract = 1
-    secb4extract = hoursbeforeextract * 60 * 1
-    ### Use this as a regular extraction daily
-    target_datetime = record_time - timedelta(seconds=secb4extract)
+        tz_SG = pytz.timezone('Singapore')
+        record_time = datetime.now(tz_SG)
 
-    #### after this has done running to comment this out and use days = 2/3 - instead of dates so far back
-    #### if you need to extract data a long time back (during a situation when new tickers are added) -> change days to (365 * 5)
-    extraction_start_datetime = record_time - timedelta(days=(3))
-    startdate = extraction_start_datetime
-    enddate = record_time
+        hoursbeforeextract = 1
+        secb4extract = hoursbeforeextract * 60 * 1
+        ### Use this as a regular extraction daily
+        target_datetime = record_time - timedelta(seconds=secb4extract)
 
-    # startdate = '2022-08-01'
-    # enddate = '2022-08-19'
+        #### after this has done running to comment this out and use days = 2/3 - instead of dates so far back
+        #### if you need to extract data a long time back (during a situation when new tickers are added) -> change days to (365 * 5)
+        extraction_start_datetime = record_time - timedelta(days=(3))
+        startdate = extraction_start_datetime
+        enddate = record_time
 
-    docs = db.collection(collection).where('updated_datetime', '<=', target_datetime).order_by("updated_datetime", direction=firestore.Query.ASCENDING).stream()
+        # startdate = '2022-08-01'
+        # enddate = '2022-08-19'
 
-    for doc in docs:
+        docs = db.collection(collection).where('updated_datetime', '<=', target_datetime).order_by("updated_datetime", direction=firestore.Query.ASCENDING).stream()
 
-        recordtime = datetime.now(tz_SG)
-        ticker = doc._data['ticker']
-        ticker = yf.Ticker(ticker)
-        print ("updating ", ticker )
+        for doc in docs:
 
-        # df = data.history(period="max")
-        df = ticker.history(start=startdate,  end=enddate)
-        # the datetime needs to be changed if not firestore will not accept it
-        df.index = pd.to_datetime(df.index, format = '%m/%d/%Y').strftime('%Y-%m-%d')
+            recordtime = datetime.now(tz_SG)
+            ticker = doc._data['ticker']
+            ticker = yf.Ticker(ticker)
+            print ("updating ", ticker )
 
-        try:
+            # df = data.history(period="max")
+            df = ticker.history(start=startdate,  end=enddate)
+            # the datetime needs to be changed if not firestore will not accept it
+            df.index = pd.to_datetime(df.index, format = '%m/%d/%Y').strftime('%Y-%m-%d')
 
-            #choose only the data you need
-            df = df[['Close','Dividends']]
-            df = df.to_dict()
-            col_list = list(df.keys())
-            val_list = list(df.values())
+            try:
 
-            data = {}
-            data_ind = {}
+                #choose only the data you need
+                df = df[['Close','Dividends']]
+                df = df.to_dict()
+                col_list = list(df.keys())
+                val_list = list(df.values())
 
-            #relabelling the dates without time and adding them to a dictionary
-            j = 0
-            for k in col_list:
-                fin_values = val_list[j]
-                data_ind[k] = fin_values
-                j = j + 1
+                data = {}
+                data_ind = {}
+
+                #relabelling the dates without time and adding them to a dictionary
+                j = 0
+                for k in col_list:
+                    fin_values = val_list[j]
+                    data_ind[k] = fin_values
+                    j = j + 1
+
+                    data = {
+                        'activated': True,
+                        'price_history':data_ind,
+                        'updated_datetime': recordtime
+                    }
+
+                    db.collection(collection).document(doc.id).set(data, merge=True)
+
+            except:
 
                 data = {
                     'activated': True,
-                    'price_history':data_ind,
+                    'price_history': {},
                     'updated_datetime': recordtime
                 }
 
                 db.collection(collection).document(doc.id).set(data, merge=True)
 
+                print ("no data - skipped", ticker)
+
+
+            print ("updated ", ticker )
+
+    except Exception as e:
+        print (e)
+        file_name = __name__
+        function_name = inspect.currentframe().f_code.co_name
+        subject = "Error on equity_price_history extract"
+        try:
+            ticker = ticker
         except:
+            ticker = "None"
+        content = "Error in \n File name: "+ str(file_name) \
+             + "\n Function: " + str(function_name) \
+              + "\n Detailed error: " + str(e) \
+                + "\n Error data: " + str(ticker)
 
-            data = {
-                'activated': True,
-                'price_history': {},
-                'updated_datetime': recordtime
-            }
-
-            db.collection(collection).document(doc.id).set(data, merge=True)
-
-            print ("no data - skipped", ticker)
-
-
-        print ("updated ", ticker )
-
+        error_email(subject, content)
