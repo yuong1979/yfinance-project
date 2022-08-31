@@ -72,7 +72,7 @@ try:
         return redirect(url_for("home"))
 
 
-    # runs every one hour - frequency : * */1 * * *
+    # runs every six hour - frequency : * */6 * * *
     @app.route("/equity_compute")
     def run_equity_compute():
         #extracting financials - after initial extraction is complete, change the code to extract daily only

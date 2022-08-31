@@ -149,6 +149,9 @@ def update_industry_aggregates():
             except:
                 pass
 
+    except AttributeError:
+        pass
+
     except Exception as e:
         print (e)
         file_name = __name__
@@ -176,37 +179,55 @@ def update_industry_aggregates():
 # DESCENDING - latest date first
 def insert_industry_agg_data():
 
-    decide_extraction(extraction_time_target, 'equity_daily_agg', 'daily_industry_agg_updated_datetime')
+    try:
 
-    tz_SG = pytz.timezone('Singapore')
-    # Change this to industry_data_updated_datetime after running for the first time
-    e_docs = db.collection('equity_daily_agg').order_by("daily_industry_agg_updated_datetime", direction=firestore.Query.ASCENDING).stream()
+        decide_extraction(extraction_time_target, 'equity_daily_agg', 'daily_industry_agg_updated_datetime')
 
-    x = 0
-    for i in e_docs:
-        ticker = i._data['ticker']
-        industry = i._data['industry']
+        tz_SG = pytz.timezone('Singapore')
+        # Change this to industry_data_updated_datetime after running for the first time
+        e_docs = db.collection('equity_daily_agg').order_by("daily_industry_agg_updated_datetime", direction=firestore.Query.ASCENDING).stream()
 
+        x = 0
+        for i in e_docs:
+            ticker = i._data['ticker']
+            industry = i._data['industry']
+
+            try:
+                ind_data = db.collection('equity_daily_industry').document(industry).get()
+                ind_data = ind_data._data
+            except:
+                ind_data = ""
+
+            recordtime = datetime.now(tz_SG)
+            data = {
+                'industry': industry,
+                'industry_data': ind_data,
+                'daily_industry_agg_updated_datetime': recordtime
+            }
+
+            # print (data)
+            db.collection('equity_daily_agg').document(i.id).set(data, merge=True)
+            print (x, ticker)
+            x = x + 1
+
+    except AttributeError:
+        pass
+
+    except Exception as e:
+        print (e)
+        file_name = __name__
+        function_name = inspect.currentframe().f_code.co_name
+        subject = "Error on dumping industry aggregates into equity_daily_agg"
         try:
-            ind_data = db.collection('equity_daily_industry').document(industry).get()
-            ind_data = ind_data._data
+            ticker = ticker
         except:
-            ind_data = ""
+            ticker = "None"
+        content = "Error in \n File name: "+ str(file_name) \
+             + "\n Function: " + str(function_name) \
+              + "\n Detailed error: " + str(e) \
+                + "\n Error data: " + str(ticker)
 
-        recordtime = datetime.now(tz_SG)
-        data = {
-            'industry': industry,
-            'industry_data': ind_data,
-            'daily_industry_agg_updated_datetime': recordtime
-        }
-
-        # print (data)
-        db.collection('equity_daily_agg').document(i.id).set(data, merge=True)
-        print (x, ticker)
-        x = x + 1
-
-
-
+        error_email(subject, content)
 
 
 
@@ -347,6 +368,8 @@ def update_country_aggregates():
             except:
                 pass
 
+    except AttributeError:
+        pass
 
     except Exception as e:
         print (e)
@@ -473,7 +496,8 @@ def equity_kpi_ranker():
             os.remove(os.path.join('dataframes/', f))
         df.to_csv('dataframes/'+ recordtime + '.csv')
 
-
+    except AttributeError:
+        pass
 
     except Exception as e:
         print (e)
@@ -619,7 +643,8 @@ def insert_industry_avg_data():
             
         print ("dumped ranked data into equity_calc")
 
-
+    except AttributeError:
+        pass
 
     except Exception as e:
         print (e)
