@@ -149,8 +149,8 @@ def update_industry_aggregates():
             except:
                 pass
 
-    except AttributeError:
-        pass
+    except AttributeError as e:
+        print (e)
 
     except Exception as e:
         print (e)
@@ -210,8 +210,8 @@ def insert_industry_agg_data():
             print (x, ticker)
             x = x + 1
 
-    except AttributeError:
-        pass
+    except AttributeError as e:
+        print (e)
 
     except Exception as e:
         print (e)
@@ -368,8 +368,8 @@ def update_country_aggregates():
             except:
                 pass
 
-    except AttributeError:
-        pass
+    except AttributeError as e:
+        print (e)
 
     except Exception as e:
         print (e)
@@ -496,8 +496,8 @@ def equity_kpi_ranker():
             os.remove(os.path.join('dataframes/', f))
         df.to_csv('dataframes/'+ recordtime + '.csv')
 
-    except AttributeError:
-        pass
+    except AttributeError as e:
+        print (e)
 
     except Exception as e:
         print (e)
@@ -643,8 +643,8 @@ def insert_industry_avg_data():
             
         print ("dumped ranked data into equity_calc")
 
-    except AttributeError:
-        pass
+    except AttributeError as e:
+        print (e)
 
     except Exception as e:
         print (e)

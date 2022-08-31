@@ -72,7 +72,7 @@ try:
         return redirect(url_for("home"))
 
 
-    # runs every six hour - frequency : * */6 * * *
+    # runs every twelve hour - frequency : * */12 * * *
     @app.route("/equity_compute")
     def run_equity_compute():
         #extracting financials - after initial extraction is complete, change the code to extract daily only
@@ -82,7 +82,7 @@ try:
         return redirect(url_for("home"))
 
 
-    # runs every one hour - frequency : * */1 * * *
+    # runs every two hours - frequency : * */2 * * *
     @app.route("/equity_compute_intensive")
     def run_equity_compute_intensive():
         insert_industry_avg_data()
@@ -97,7 +97,7 @@ try:
         ext_daily_fx_yf_fb()
         return redirect(url_for("home"))
 
-    # runs every day at 12pm - change to running every 6 hours - frequency : 0 */6 * * *
+    # runs every day at 12pm - change to running every 12 hours - frequency : 0 */12 * * *
     @app.route("/exp_fb_gs")
     def run_exp_fb_gs():
         #extracting all datasets datetiem into gs to ensure all neccessary extracted

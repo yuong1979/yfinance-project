@@ -301,8 +301,8 @@ def imp_equity_daily_kpi_fb():
             print ("Updated " + str(i._data['ticker']))
             time.sleep(sleeptime)
 
-    except AttributeError:
-        pass
+    except AttributeError as e:
+        print (e)
 
     except Exception as e:
         print (e)
@@ -408,8 +408,8 @@ def imp_equity_financials_fb():
             db.collection(collection).document(tick.id).set(data, merge=True)
             print ("Updated " + str(tick._data['ticker']))
 
-    except AttributeError:
-        pass
+    except AttributeError as e:
+        print (e)
 
     except Exception as e:
         print (e)
@@ -524,8 +524,8 @@ def imp_equity_price_history_fb():
             print ("updated ", ticker )
 
 
-    except AttributeError:
-        pass
+    except AttributeError as e:
+        print (e)
 
     except Exception as e:
         print (e)
