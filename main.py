@@ -81,7 +81,7 @@ try:
 
         equity_kpi_ranker_0()
         equity_kpi_ranker_1()
-        
+
         insert_industry_agg_data()
         return redirect(url_for("home"))
 
@@ -113,16 +113,62 @@ except Exception as e:
     content = "Error in \n File name: " + str(file_name) + "\n Function: " + str(function_name) + "\n Detailed error: " + str(e)
     error_email(subject, content)
 
+
+
+# earliest_equity_daily_kpi_list = db.collection('equity_daily_kpi').order_by("updated_datetime", direction=firestore.Query.ASCENDING).limit(1).get()
+# print (earliest_equity_daily_kpi_list[0]._data)
+# earliest_price_history_list = db.collection('equity_daily_kpi').order_by("updated_datetime", direction=firestore.Query.ASCENDING).limit(1).get()
+# print (earliest_price_history_list)
+
+# equity_daily_agg
+# equity_financials
+# equity_price_history
+
+
+
+
 @app.get("/")
 def home():
 
     earliest_tickerlist = db.collection('equity_daily_kpi').order_by("updated_datetime", direction=firestore.Query.ASCENDING).limit(5).get()
     latest_tickerlist = db.collection('equity_daily_kpi').order_by("updated_datetime", direction=firestore.Query.DESCENDING).limit(5).get()
-    fxlist = db.collection('fx').order_by("updated_datetime", direction=firestore.Query.ASCENDING).limit(10).get()
+
+    #latest downloaded fx entry
+    fxlist = db.collection('fxhistorical').order_by("datetime_format", direction=firestore.Query.DESCENDING).limit(3).stream()
+
+    #latest downloaded equity_daily_country
+    equity_daily_country_list = db.collection('equity_daily_country').order_by("daily_agg_record_time", direction=firestore.Query.DESCENDING).limit(3).stream()
+
+    #latest downloaded equity_daily_industry
+    equity_daily_industry_list = db.collection('equity_daily_industry').order_by("daily_agg_record_time", direction=firestore.Query.DESCENDING).limit(3).stream()
+
+    #latest downloaded equity_price_history
+    equity_price_history_list = db.collection('equity_price_history').order_by("updated_datetime", direction=firestore.Query.DESCENDING).limit(3).stream()
+
+    # for i in equity_price_history_list:
+    #     print (i)
+    #     print (i._data)
+
+    #latest downloaded equity_daily_agg - rank
+    equity_daily_agg_rank_list = db.collection('equity_daily_agg').order_by("daily_industry_rank_updated_datetime", direction=firestore.Query.DESCENDING).limit(3).stream()
+    #latest downloaded equity_daily_agg - avg
+    equity_daily_agg_avg_list = db.collection('equity_daily_agg').order_by("daily_industry_agg_updated_datetime", direction=firestore.Query.DESCENDING).limit(3).stream()
+
+
     return render_template("base.html", 
         earliest_tickerlist=earliest_tickerlist,
-        latest_tickerlist=latest_tickerlist, 
-        fxlist=fxlist)
+        latest_tickerlist=latest_tickerlist,
+
+        equity_price_history_list=equity_price_history_list,
+
+        equity_daily_agg_rank_list=equity_daily_agg_rank_list,
+        equity_daily_agg_avg_list=equity_daily_agg_avg_list,
+
+        equity_daily_country_list=equity_daily_country_list,
+        equity_daily_industry_list=equity_daily_industry_list,
+        fxlist=fxlist
+        
+        )
 
     # return render_template("base.html")
 

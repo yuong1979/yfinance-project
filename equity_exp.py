@@ -388,3 +388,21 @@ def imported_data_details_check():
     print ("Earliest Daily Aggregation Dataset: " + docs[0]._data['daily_industry_agg_updated_datetime'].strftime('%Y-%m-%d'))
 
 
+# python -c 'from equity_exp import test; test()'
+
+def test():
+
+
+    earliest_equity_daily_kpi_list = db.collection('equity_daily_kpi').order_by("updated_datetime", direction=firestore.Query.ASCENDING).limit(1).get()
+    print (earliest_equity_daily_kpi_list[0]._data)
+    earliest_price_history_list = db.collection('equity_daily_kpi').order_by("updated_datetime", direction=firestore.Query.ASCENDING).limit(1).get()
+    print (earliest_price_history_list)
+
+    # equity_daily_agg
+    # equity_daily_country
+    # equity_daily_industry
+    # equity_financials
+    # equity_daily_kpi
+    # equity_price_history
+    # fxhistorical
+
