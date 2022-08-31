@@ -51,7 +51,7 @@
 
 
     <div style="margin-top: 50px;" class="ui container split right">
-        <h2> Last time equity daily aggregator avg updated</h2>
+        <h2> Earliest time equity daily aggregator avg updated</h2>
         {% for i in equity_daily_agg_avg_list %}
         <div class="ui segment">
             <p class="ui big header">{{ i._data['daily_industry_agg_updated_datetime'].strftime('%Y-%m-%d   %H:%M') }} / {{ i._data['ticker'] }}</p>
@@ -60,7 +60,7 @@
     </div>
     
     <div style="margin-top: 50px;" class="ui container split right">
-        <h2> Last time equity daily aggregator rank updated</h2>
+        <h2> Earliest time equity daily aggregator rank updated</h2>
         {% for i in equity_daily_agg_rank_list %}
         <div class="ui segment">
             <p class="ui big header">{{ i._data['daily_industry_rank_updated_datetime'].strftime('%Y-%m-%d   %H:%M') }} / {{ i._data['ticker'] }}</p>
@@ -74,7 +74,7 @@
 
 
     <div style="margin-top: 50px;" class="ui container split right">
-        <h2> Last time equity industry is updated</h2>
+        <h2> Earliest time equity industry is updated</h2>
         {% for i in equity_daily_industry_list %}
         <div class="ui segment">
             <p class="ui big header">{{ i._data['daily_agg_record_time'].strftime('%Y-%m-%d   %H:%M') }} / {{ i.id }}</p>
@@ -83,7 +83,7 @@
     </div>
 
     <div style="margin-top: 50px;" class="ui container split right">
-        <h2> Last time equity country is updated</h2>
+        <h2> Earliest time equity country is updated</h2>
         {% for i in equity_daily_country_list %}
         <div class="ui segment">
             <p class="ui big header">{{ i._data['daily_agg_record_time'].strftime('%Y-%m-%d   %H:%M') }} / {{ i.id }}</p>
@@ -92,10 +92,10 @@
     </div>
 
 
-    
+
 
     <div style="margin-top: 50px;" class="ui container split right">
-        <h2> Last time currency was updated</h2>
+        <h2> Latest time currency was updated</h2>
         {% for i in fxlist %}
         <div class="ui segment">
             <p class="ui big header">date updated: {{ i._data['datetime_format'].strftime('%Y-%m-%d   %H:%M') }} / when updated: {{ i._data['updated_datetime'].strftime('%Y-%m-%d   %H:%M') }}</p>

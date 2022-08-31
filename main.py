@@ -13,7 +13,7 @@ import inspect
 # from mgt_fin_exp_gs import ext_daily_equity_financials_fb_gs, ext_daily_equity_datetime_fb_gs
 from equity_exp import exp_dataset_datetime_gs, exp_equity_daily_kpi_gs, exp_fx_datetime_gs
 from equity_imp import imp_equity_daily_kpi_fb, imp_equity_financials_fb, imp_equity_price_history_fb
-from equity_compute import update_country_aggregates, update_industry_aggregates, insert_industry_agg_data, equity_kpi_ranker_0, equity_kpi_ranker_1
+from equity_compute import update_country_aggregates, update_industry_aggregates, insert_industry_agg_data, insert_industry_avg_data, equity_kpi_ranker
 
 
 
@@ -78,12 +78,27 @@ try:
         #extracting financials - after initial extraction is complete, change the code to extract daily only
         update_country_aggregates() 
         update_industry_aggregates()
+        equity_kpi_ranker()
+        return redirect(url_for("home"))
 
-        equity_kpi_ranker_0()
-        equity_kpi_ranker_1()
 
+    # runs every one hour - frequency : * */1 * * *
+    @app.route("/equity_compute_intensive")
+    def run_equity_compute_intensive():
+        insert_industry_avg_data()
         insert_industry_agg_data()
         return redirect(url_for("home"))
+
+
+
+    # # runs every one hour - frequency : * */1 * * *
+    # @app.route("/testrun")
+    # def run_testrun():
+
+    #     equity_kpi_ranker_1()
+
+    #     return redirect(url_for("home"))
+
 
 
     # runs every day at 12am - frequency : 1 0 * * *
@@ -115,17 +130,6 @@ except Exception as e:
 
 
 
-# earliest_equity_daily_kpi_list = db.collection('equity_daily_kpi').order_by("updated_datetime", direction=firestore.Query.ASCENDING).limit(1).get()
-# print (earliest_equity_daily_kpi_list[0]._data)
-# earliest_price_history_list = db.collection('equity_daily_kpi').order_by("updated_datetime", direction=firestore.Query.ASCENDING).limit(1).get()
-# print (earliest_price_history_list)
-
-# equity_daily_agg
-# equity_financials
-# equity_price_history
-
-
-
 
 @app.get("/")
 def home():
@@ -133,27 +137,25 @@ def home():
     earliest_tickerlist = db.collection('equity_daily_kpi').order_by("updated_datetime", direction=firestore.Query.ASCENDING).limit(5).get()
     latest_tickerlist = db.collection('equity_daily_kpi').order_by("updated_datetime", direction=firestore.Query.DESCENDING).limit(5).get()
 
-    #latest downloaded fx entry
-    fxlist = db.collection('fxhistorical').order_by("datetime_format", direction=firestore.Query.DESCENDING).limit(3).stream()
+
 
     #latest downloaded equity_daily_country
-    equity_daily_country_list = db.collection('equity_daily_country').order_by("daily_agg_record_time", direction=firestore.Query.DESCENDING).limit(3).stream()
+    equity_daily_country_list = db.collection('equity_daily_country').order_by("daily_agg_record_time", direction=firestore.Query.ASCENDING).limit(3).stream()
 
     #latest downloaded equity_daily_industry
-    equity_daily_industry_list = db.collection('equity_daily_industry').order_by("daily_agg_record_time", direction=firestore.Query.DESCENDING).limit(3).stream()
+    equity_daily_industry_list = db.collection('equity_daily_industry').order_by("daily_agg_record_time", direction=firestore.Query.ASCENDING).limit(3).stream()
 
     #latest downloaded equity_price_history
-    equity_price_history_list = db.collection('equity_price_history').order_by("updated_datetime", direction=firestore.Query.DESCENDING).limit(3).stream()
-
-    # for i in equity_price_history_list:
-    #     print (i)
-    #     print (i._data)
+    equity_price_history_list = db.collection('equity_price_history').order_by("updated_datetime", direction=firestore.Query.ASCENDING).limit(3).stream()
 
     #latest downloaded equity_daily_agg - rank
-    equity_daily_agg_rank_list = db.collection('equity_daily_agg').order_by("daily_industry_rank_updated_datetime", direction=firestore.Query.DESCENDING).limit(3).stream()
+    equity_daily_agg_rank_list = db.collection('equity_daily_agg').order_by("daily_industry_rank_updated_datetime", direction=firestore.Query.ASCENDING).limit(3).stream()
     #latest downloaded equity_daily_agg - avg
-    equity_daily_agg_avg_list = db.collection('equity_daily_agg').order_by("daily_industry_agg_updated_datetime", direction=firestore.Query.DESCENDING).limit(3).stream()
+    equity_daily_agg_avg_list = db.collection('equity_daily_agg').order_by("daily_industry_agg_updated_datetime", direction=firestore.Query.ASCENDING).limit(3).stream()
 
+
+    #latest downloaded fx entry
+    fxlist = db.collection('fxhistorical').order_by("datetime_format", direction=firestore.Query.DESCENDING).limit(3).stream()
 
     return render_template("base.html", 
         earliest_tickerlist=earliest_tickerlist,

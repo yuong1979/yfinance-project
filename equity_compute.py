@@ -385,14 +385,14 @@ def update_country_aggregates():
 ######################################################################################################################
 ####### Extracts data from equity daily kpi, converts them into dataframe, dump them into csv for ranking ############
 ######################################################################################################################
-# python -c 'from equity_compute import equity_kpi_ranker_0; equity_kpi_ranker_0()'
+# python -c 'from equity_compute import equity_kpi_ranker; equity_kpi_ranker()'
 
 
-def equity_kpi_ranker_0():
+def equity_kpi_ranker():
 
     try:
         
-        #check if the csv data is up to date, if not need to run equity_kpi_ranker_0 again
+        #check if the csv data is up to date, if not need to run equity_kpi_ranker again
         tz_SG = pytz.timezone('Singapore')
         recordtime = datetime.now(tz_SG).strftime("%Y-%m-%d")
         try:
@@ -497,14 +497,13 @@ def equity_kpi_ranker_0():
 ######################################################################################################################
 ####### Data manipulation to rank the equities and dumps ranked data into equity_daily_agg ###########################
 ######################################################################################################################
-# python -c 'from equity_compute import equity_kpi_ranker_1; equity_kpi_ranker_1()'
+# python -c 'from equity_compute import insert_industry_avg_data; insert_industry_avg_data()'
 
 
 
-def equity_kpi_ranker_1():
+def insert_industry_avg_data():
 
     try:
-
         #check if the csv data is up to date, if not need to run equity_kpi_ranker_0 again
         tz_SG = pytz.timezone('Singapore')
         recordtime = datetime.now(tz_SG).strftime("%Y-%m-%d")
@@ -512,11 +511,10 @@ def equity_kpi_ranker_1():
             df = pd.read_csv('dataframes/'+ recordtime + '.csv')
         except:
             # rerun function then exit to wait for the function to be run successfully through cloud schedule
-            equity_kpi_ranker_0()
+            equity_kpi_ranker()
             exit()
 
         decide_extraction(extraction_time_target, 'equity_daily_agg', 'daily_industry_rank_updated_datetime')
-
         # replace with na if the value of the ratio is zero
         df['value'] = df['value'].apply(lambda x: nan if x == 0 else x)
 
