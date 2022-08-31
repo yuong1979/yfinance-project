@@ -14,7 +14,7 @@ from google.cloud.firestore import Client
 from secret import access_secret
 from settings import project_id, firebase_database, fx_api_key, firestore_api_key, google_sheets_api_key, schedule_function_key, firebase_auth_api_key
 from googleapiclient.discovery import build
-from email_function import error_email
+from tools import error_email
 import inspect
 
 

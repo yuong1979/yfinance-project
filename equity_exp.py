@@ -11,7 +11,7 @@ import json
 from google.cloud.firestore import Client
 from secret import access_secret
 from settings import project_id, firebase_database, fx_api_key, firestore_api_key, google_sheets_api_key, schedule_function_key, firebase_auth_api_key
-from email_function import error_email
+from tools import error_email
 import inspect
 import pytz
 
@@ -328,6 +328,16 @@ def exp_fx_datetime_gs():
         error_email(subject, content)
 
 
+
+
+
+
+
+
+
+
+
+
 # ################################################################################################################
 # ######## Checking the last extracted ticker - TO CONFIRM EXTRACTION SCRIPTS ARE RUNNING ########################
 # ################################################################################################################
@@ -357,8 +367,24 @@ def imported_data_details_check():
             ticker = i.to_dict()['ticker']
             print ("Earliest Dataset: " + j + " Ticker: " + ticker + " Downloaded Time: " + str(datetime))
 
+    # sort the latest data in fx
     docs = db.collection('fxhistorical').order_by("datetime_format", direction=firestore.Query.DESCENDING).limit(1).get()
-
     print ("Latest FX Dataset: " + docs[0]._data['datetime_format'].strftime('%Y-%m-%d'))
+
+    # sort the earliest data in country
+    docs = db.collection('equity_daily_country').order_by("daily_agg_record_time", direction=firestore.Query.ASCENDING).limit(1).get()
+    print ("Earliest Country Dataset: " + docs[0]._data['daily_agg_record_time'].strftime('%Y-%m-%d'))
+
+    # sort the earliest data in industry
+    docs = db.collection('equity_daily_industry').order_by("daily_agg_record_time", direction=firestore.Query.ASCENDING).limit(1).get()
+    print ("Earliest Industry Dataset: " + docs[0]._data['daily_agg_record_time'].strftime('%Y-%m-%d'))
+
+    # sort the earliest data in ranking
+    docs = db.collection('equity_daily_agg').order_by("daily_industry_rank_updated_datetime", direction=firestore.Query.ASCENDING).limit(1).get()
+    print ("Earliest Daily Ranking Dataset: " + docs[0]._data['daily_industry_rank_updated_datetime'].strftime('%Y-%m-%d'))
+
+    # sort the earliest data in aggregated
+    docs = db.collection('equity_daily_agg').order_by("daily_industry_agg_updated_datetime", direction=firestore.Query.ASCENDING).limit(1).get()
+    print ("Earliest Daily Aggregation Dataset: " + docs[0]._data['daily_industry_agg_updated_datetime'].strftime('%Y-%m-%d'))
 
 

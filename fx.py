@@ -14,7 +14,7 @@ from settings import project_id, firebase_database, fx_api_key, firestore_api_ke
 import requests
 import yfinance as yf
 from firebase_admin import firestore
-from email_function import error_email
+from tools import error_email
 import inspect
 from bs4 import BeautifulSoup
 import re
@@ -250,7 +250,7 @@ def view_daily_fx_fb():
 
 
 # #######################################################################################################
-# ############### Inserting FX into fx daily manually ###################################################
+# ############### Inserting FX into fx daily manually from xe.com instead of yfinance ###################
 # #######################################################################################################
 # python -c 'from fx import manual_inserting_fx; manual_inserting_fx()'
 
@@ -272,7 +272,7 @@ def manual_inserting_fx():
 
     currencyrates = {}
     for i in docs:
-        print (i._data['currency'])
+        # print (i._data['currency'])
         currency = i._data['currency']
 
         target_site = "https://www.xe.com/currencyconverter/convert/?Amount=1&From=USD&To="+currency
@@ -281,6 +281,7 @@ def manual_inserting_fx():
         regex = re.compile('.*result__BigRate*')
         target = soup.find(class_=regex).get_text().split()[0].replace(',',"")
         currencyrates[currency] = target
+        print(currency, target)
 
         time.sleep(1)
 

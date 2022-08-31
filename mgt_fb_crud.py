@@ -313,27 +313,5 @@ def financials_to_gs():
  
 
 
-#things to do
-# add the country median sum aggregator by changing the industry one
-# add email notifications to the industry median sum aggregator
-# add email notifications to the country median sum aggregator
-# set up the aggregators so it runs once daily
-# dump the industry median and sum kpi into the companies associated with the industry into equities kpi add
-# add dates to all the new functions and tables
-
-
-
-## process
-# - daily runs capture all daily kpi data
-# - next run to do an aggregation by country, sector and industry of the KPIs involved
-# - next run to extract filter sector, industry country on the daily kpi data rank them by KPIs 
-
-
-## Steps in building this process
-# - adjust the daily run to insert the country, sector and industry into daily run kpi collection and push that live and observe if working fine
-# - create the collection for country, sector and industry
-# - create the function that updates the aggregation collection for country, sector and industry
-
-
 
 

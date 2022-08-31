@@ -6,21 +6,18 @@ from fx import ext_daily_fx_yf_fb
 from secret import access_secret
 import json
 from settings import project_id, firebase_database, fx_api_key, firestore_api_key, google_sheets_api_key, schedule_function_key, firebase_auth_api_key
-from email_function import error_email
+from tools import error_email
 import inspect
 # from mgt_fb_crud import financials_to_gs
 # from mgt_fin_exp_fb import ext_daily_equity_financials_yf_fb
 # from mgt_fin_exp_gs import ext_daily_equity_financials_fb_gs, ext_daily_equity_datetime_fb_gs
 from equity_exp import exp_dataset_datetime_gs, exp_equity_daily_kpi_gs, exp_fx_datetime_gs
 from equity_imp import imp_equity_daily_kpi_fb, imp_equity_financials_fb, imp_equity_price_history_fb
+from equity_compute import update_country_aggregates, update_industry_aggregates, insert_industry_agg_data, equity_kpi_ranker_0, equity_kpi_ranker_1
 
 
 
 
-
-
-        # exp_fx_datetime_gs()
-        # exp_dataset_datetime_gs()
 
 app = Flask(__name__)
 
@@ -60,18 +57,32 @@ try:
         imp_equity_daily_kpi_fb()
         return redirect(url_for("home"))
 
-    # runs every one hour - frequency : */10 * * * *
+    # runs every 10 minutes - frequency : */10 * * * *
     @app.route("/imp_equity_financials_fb")
     def run_imp_equity_financials_fb():
         #extracting financials - only done once a quarter after initial extraction is complete
         imp_equity_financials_fb()
         return redirect(url_for("home"))
 
-    # runs every one hour - frequency : */10 * * * *
+    # runs every one hour - frequency : * */1 * * *
     @app.route("/imp_equity_price_history_fb")
     def run_imp_equity_price_history_fb():
         #extracting financials - after initial extraction is complete, change the code to extract daily only
         imp_equity_price_history_fb()
+        return redirect(url_for("home"))
+
+
+    # runs every one hour - frequency : * */1 * * *
+    @app.route("/equity_compute")
+    def run_equity_compute():
+        #extracting financials - after initial extraction is complete, change the code to extract daily only
+        update_country_aggregates() 
+        update_industry_aggregates()
+
+        equity_kpi_ranker_0()
+        equity_kpi_ranker_1()
+        
+        insert_industry_agg_data()
         return redirect(url_for("home"))
 
 
