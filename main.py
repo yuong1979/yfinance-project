@@ -90,17 +90,6 @@ try:
         return redirect(url_for("home"))
 
 
-
-    # # runs every one hour - frequency : * */1 * * *
-    # @app.route("/testrun")
-    # def run_testrun():
-
-    #     equity_kpi_ranker_1()
-
-    #     return redirect(url_for("home"))
-
-
-
     # runs every day at 12am - frequency : 1 0 * * *
     @app.route("/ext_daily_fx_yf_fb")
     def run_ext_daily_fx_yf_fb():

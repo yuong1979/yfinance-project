@@ -11,12 +11,17 @@ from secret import access_secret
 
 import json
 from firebase_admin import firestore
-
+from googleapiclient.discovery import build
 
 
 email_password = access_secret(email_password, project_id)
 
-
+google_sheets_api_key = access_secret(google_sheets_api_key, project_id)
+google_sheets_api_key_dict = json.loads(google_sheets_api_key)
+gscredentials = service_account.Credentials.from_service_account_info(google_sheets_api_key_dict)
+REQUIRED_SPREADSHEET_ID = '1_lobEzbiuP9TE2UZqmqSAwizT8f2oeuZ8mVuUTbBAsA'
+service = build('sheets', 'v4', credentials=gscredentials)
+sheet = service.spreadsheets()
 
 
 
@@ -63,6 +68,45 @@ def decide_extraction(time_in_hours, collection, collection_updated_datetime):
     if time_diff.seconds < time_seconds:
         print ('exiting because the latest entry has been extracted less than 24 hours ago')
         exit()
+
+
+########################################################################################
+###########  Export function to google sheets  #########################################
+########################################################################################
+# python -c 'from export_gs import export_gs_func; export_gs_func()'
+
+def export_gs_func(name, df ,sheetinfo):
+
+    dfcol = []
+    for i in df.columns:
+        try:
+            i = i.strftime('%Y-%m-%d')
+        except:
+            pass
+        dfcol.append(i)
+
+    dfindex = []
+    for i in df.index:
+        dfindex.append([i])
+
+    dflist = df.values.tolist()
+
+    #Inject the values
+    request = sheet.values().update(spreadsheetId=REQUIRED_SPREADSHEET_ID, 
+        range=sheetinfo+"!B2", valueInputOption="USER_ENTERED", body={"values":dflist}).execute()
+
+    #Inject the index
+    request = sheet.values().update(spreadsheetId=REQUIRED_SPREADSHEET_ID, 
+        range=sheetinfo+"!A2", valueInputOption="USER_ENTERED", body={"values":dfindex}).execute()
+
+    #Inject the fields
+    request = sheet.values().update(spreadsheetId=REQUIRED_SPREADSHEET_ID, 
+        range=sheetinfo+"!B1", valueInputOption="USER_ENTERED", body={"values":[dfcol]}).execute()
+
+    #Inject the name
+    request = sheet.values().update(spreadsheetId=REQUIRED_SPREADSHEET_ID, 
+        range=sheetinfo+"!A1", valueInputOption="USER_ENTERED", body={"values":[[name]]}).execute()
+
 
 
 

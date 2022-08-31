@@ -23,7 +23,7 @@ db = Client(firebase_database, fbcredentials)
 
 
 #only extract when 24 hours has passed, if not dont need
-extraction_time_target = 1
+extraction_time_target = 24
 
 ###################################################################################################################################
 ####### Updating industry aggregates MEDIAN AND SUM for KPIs - THIS NEEDS TO BE COMPUTED BEFORE THE BELOW #########################
