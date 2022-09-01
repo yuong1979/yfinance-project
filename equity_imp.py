@@ -163,7 +163,7 @@ def last_valid_fx_date():
 def imp_equity_daily_kpi_fb():
 
     collection = 'equity_daily_kpi'
-    sleeptime = 5
+    sleeptime = 1
     #check if the document in the collections latest date extracted is > 30 seconds ago, if so to exit(), if not proceed to run
     tz_UTC = pytz.timezone('UTC')
     time_seconds = 30
@@ -286,7 +286,7 @@ def imp_equity_daily_kpi_fb():
             kpi_dict = {}
             for j in kpilist:
                 try:
-                    kpi_in_USD = i._data['kpi'][j] * rate
+                    kpi_in_USD = i._data['kpi'][j] / rate
                 except Exception as e:
                     #if there is no kpi than replace with ""
                     kpi_in_USD = ""
