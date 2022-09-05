@@ -663,6 +663,9 @@ def insert_industry_avg_data():
 
 
 
+
+
+
 # ##################################################################################################
 # ################### To create a clean equity_daily_agg database ##################################
 # ##################################################################################################
@@ -708,3 +711,33 @@ def insert_industry_avg_data():
 
 
 
+
+# # ##########################################################################################################################
+# # ######### To test csv - this works - meaning that csv files can be used in cloud run to aid in intensive compute #########
+# # ##########################################################################################################################
+# # # python -c 'from equity_compute import test_csv; test_csv()'
+# from random import random
+
+# def test_csv():
+
+#     df_dict = {}
+#     x = 0
+#     # generate random numbers between 0-1
+#     for _ in range(5):
+#         value = random()
+#         x = x + 1
+#         df_dict[x] = value
+
+#     df = pd.DataFrame.from_dict(df_dict, orient='index', columns=["test"])
+#     # print (df)
+
+#     df.to_csv('dataframes/test.csv')
+
+###### insert the below into flask main.py to test the function #########
+    # test_csv()
+
+    # sample_csv_data_list = []
+    # with open(filepath) as file:
+    #     csv_file = csv.reader(file)
+    #     for row in csv_file:
+    #         sample_csv_data_list.append(row)

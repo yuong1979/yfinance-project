@@ -118,15 +118,16 @@ except Exception as e:
     error_email(subject, content)
 
 
+import csv
+filepath = "dataframes/test.csv"
 
 
 @app.get("/")
 def home():
 
+
     earliest_tickerlist = db.collection('equity_daily_kpi').order_by("updated_datetime", direction=firestore.Query.ASCENDING).limit(5).get()
     latest_tickerlist = db.collection('equity_daily_kpi').order_by("updated_datetime", direction=firestore.Query.DESCENDING).limit(5).get()
-
-
 
     #latest downloaded equity_daily_country
     equity_daily_country_list = db.collection('equity_daily_country').order_by("daily_agg_record_time", direction=firestore.Query.ASCENDING).limit(3).stream()
@@ -157,7 +158,9 @@ def home():
 
         equity_daily_country_list=equity_daily_country_list,
         equity_daily_industry_list=equity_daily_industry_list,
-        fxlist=fxlist
+        fxlist=fxlist,
+
+        # sample_csv_data_list=sample_csv_data_list
         
         )
 

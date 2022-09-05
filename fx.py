@@ -247,10 +247,8 @@ def view_daily_fx_fb():
     print (test._data)
 
 
-
-
 # #######################################################################################################
-# ############### check yfinance fx is missing data on certain dates ####################################
+# ############### check yfinance fx data is missing on certain dates ####################################
 # #######################################################################################################
 # python -c 'from fx import check_yfinance_fx; check_yfinance_fx()'
 
@@ -264,7 +262,7 @@ def check_yfinance_fx():
         forex_data = yf.download('USD'+ currency +'=X', start = start_date_str, end = end_date_str)
         print (currency, forex_data)
 
-        
+
 
 
 # #######################################################################################################
