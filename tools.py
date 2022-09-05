@@ -69,6 +69,7 @@ def decide_extraction(target_hours, collection, collection_updated_datetime):
     days, seconds = time_passed.days, time_passed.seconds
     hours_passed = days * 24 + seconds // 3600
 
+    # print (time_passed)
     # print (hours_passed)
     # print (datetime.now(tz_SG), "timenow")
     # print (latest_entry[0]._data[collection_updated_datetime], "collection last updated datetime")

@@ -23,7 +23,7 @@ db = Client(firebase_database, fbcredentials)
 
 
 #only extract when 24 hours has passed, if not dont need
-extraction_time_target = 24
+extraction_time_target = 0.01
 
 ###################################################################################################################################
 ####### Updating industry aggregates MEDIAN AND SUM for KPIs - THIS NEEDS TO BE COMPUTED BEFORE THE BELOW #########################
@@ -33,6 +33,7 @@ extraction_time_target = 24
 #DESCENDING
 agg_collection = 'equity_daily_kpi'
 def update_industry_aggregates():
+
 
     try:
             
@@ -47,14 +48,16 @@ def update_industry_aggregates():
             'industry','sector','country', 
             'returnOnAssets', 'returnOnEquity', 'revenueGrowth', 'earningsGrowth',
             'grossMargins', 'operatingMargins', 'profitMargins',  'ebitdaMargins',
-            'forwardPE', 'trailingPE', 'earningsQuarterlyGrowth', 'priceToSalesTrailing12Months', 
+            'forwardPE', 'trailingPE', 'earningsQuarterlyGrowth', 'priceToSalesTrailing12Months',
+            'priceToBook', 'enterpriseToEbitda', 'enterpriseToRevenue',
             'pegRatio', 'trailingPegRatio',
+            'trailingEps', 'forwardEps', 
             'currentRatio', 'quickRatio', 'debtToEquity',
-            'dividendRate',
+            'trailingAnnualDividendYield', 'trailingAnnualDividendRate', 'fiveYearAvgDividendYield', 'dividendYield', 'dividendRate',
             'heldPercentInsiders', 'heldPercentInstitutions', 'isEsgPopulated', 'fullTimeEmployees'
             ]
         #Kpis that are inside the main field
-        kpi1USD = ['marketCapUSD', 'totalRevenueUSD', 'totalRevenueUSD', 'ebitdaUSD']
+        kpi1USD = ['marketCapUSD', 'totalRevenueUSD', 'ebitdaUSD']
 
         main_dic = {}
         for doc in docs:
@@ -76,9 +79,13 @@ def update_industry_aggregates():
         df = pd.DataFrame(main_dic)
         df = df.transpose()
 
+        # df.to_csv('testdata.csv')
+        # df = pd.read_csv('testdata.csv')
+    
         df_unique = getattr(df , category).unique()
         df_unique = pd.DataFrame(df_unique)
         df_unique = df_unique.rename(columns={0:category})
+
 
         # Calculating Sum for selected categories
         values = ['marketCapUSD', 'totalRevenueUSD', 'ebitdaUSD', 'fullTimeEmployees']
@@ -91,16 +98,26 @@ def update_industry_aggregates():
             df_data = df_data.reset_index(name = i)
             df_data = df_data.rename(columns={ i: "Sum_" + str(i) })
 
+            #try except created because the first merge will be missing a merged df, while subsequent ones will be fine because merged is available
             try:
                 df_merged_sum = pd.merge(df_merged_sum, df_data, how='left', left_on = category, right_on = category)
             except:
                 df_merged_sum = pd.merge(df_unique, df_data, how='left', left_on = category, right_on = category)
 
+
         # Calculating Median for selected categories
-        values = ['grossMargins', 'operatingMargins', 'profitMargins',  'ebitdaMargins', 
+        values = [
+                'grossMargins', 'operatingMargins', 'profitMargins',  'ebitdaMargins', 
                 'returnOnAssets', 'returnOnEquity', 'revenueGrowth', 'earningsGrowth',
                 'currentRatio', 'quickRatio', 'debtToEquity',
-                'heldPercentInsiders', 'heldPercentInstitutions']
+                'heldPercentInsiders', 'heldPercentInstitutions',
+                # new ones
+                'forwardPE', 'trailingPE', 'earningsQuarterlyGrowth', 'priceToSalesTrailing12Months',
+                'priceToBook', 'enterpriseToEbitda', 'enterpriseToRevenue',
+                'pegRatio', 'trailingPegRatio',
+                'trailingEps', 'forwardEps', 
+                'trailingAnnualDividendYield', 'trailingAnnualDividendRate', 'fiveYearAvgDividendYield', 'dividendYield', 'dividendRate'
+                ]
 
         for j in values:
 
@@ -109,7 +126,7 @@ def update_industry_aggregates():
             df_data = df_data.groupby([category])[j].median()
             df_data = df_data.reset_index(name = j)
             df_data = df_data.rename(columns={ j: "Median_" + str(j) })
-
+            #try except created because the first merge will be missing a merged df, while subsequent ones will be fine because merged is available
             try:
                 df_merged_median = pd.merge(df_merged_median, df_data, how='left', left_on = category, right_on = category)
             except:
@@ -120,11 +137,16 @@ def update_industry_aggregates():
         # Merging all the data into one dataframe
         df_merged_all = pd.merge(df_merged_sum, df_merged_median, how='left', left_on = category, right_on = category)
 
+
+        # including the number of companies in the unique dataframe
+        df_company_count = df.groupby('industry').count()['sector']
+        df_merged_all = pd.merge(df_merged_all, df_company_count, how='left', left_on = category, right_on = category)
+        df_merged_all = df_merged_all.rename(columns={'sector':'company_count'})
+
         df = df_merged_all.set_index(category)
 
         # consolidating all into a list for iterating and injecting into firestore    
         cols = df.columns.to_list()
-
         tz_SG = pytz.timezone('Singapore')
 
         # inserting the data into the equity industry collection
@@ -142,6 +164,7 @@ def update_industry_aggregates():
                 }
                 dataset.update(data_dict)
             data['daily_agg'] = dataset
+
             # print (categories, data)
             try:
                 # when there are no categories, stop and exit without inserting data
@@ -179,12 +202,13 @@ def update_industry_aggregates():
 # DESCENDING - latest date first
 def insert_industry_agg_data():
 
+
     try:
 
-        decide_extraction(extraction_time_target, 'equity_daily_agg', 'daily_industry_agg_updated_datetime')
+        # decide_extraction(extraction_time_target, 'equity_daily_agg', 'daily_industry_agg_updated_datetime')
 
         tz_SG = pytz.timezone('Singapore')
-        # Change this to industry_data_updated_datetime after running for the first time
+
         e_docs = db.collection('equity_daily_agg').order_by("daily_industry_agg_updated_datetime", direction=firestore.Query.ASCENDING).stream()
 
         x = 0
@@ -194,7 +218,7 @@ def insert_industry_agg_data():
 
             try:
                 ind_data = db.collection('equity_daily_industry').document(industry).get()
-                ind_data = ind_data._data
+                ind_data = ind_data._data['daily_agg']
             except:
                 ind_data = ""
 
@@ -266,14 +290,20 @@ def update_country_aggregates():
             'industry','sector','country', 
             'returnOnAssets', 'returnOnEquity', 'revenueGrowth', 'earningsGrowth',
             'grossMargins', 'operatingMargins', 'profitMargins',  'ebitdaMargins',
-            'forwardPE', 'trailingPE', 'earningsQuarterlyGrowth', 'priceToSalesTrailing12Months', 
+            'forwardPE', 'trailingPE', 'earningsQuarterlyGrowth', 'priceToSalesTrailing12Months',
+            'priceToBook', 'enterpriseToEbitda', 'enterpriseToRevenue',
             'pegRatio', 'trailingPegRatio',
+            'trailingEps', 'forwardEps', 
             'currentRatio', 'quickRatio', 'debtToEquity',
-            'dividendRate',
+            'trailingAnnualDividendYield', 'trailingAnnualDividendRate', 'fiveYearAvgDividendYield', 'dividendYield', 'dividendRate',
             'heldPercentInsiders', 'heldPercentInstitutions', 'isEsgPopulated', 'fullTimeEmployees'
             ]
+
+
+
+
         #Kpis that are inside the main field
-        kpi1USD = ['marketCapUSD', 'totalRevenueUSD', 'totalRevenueUSD', 'ebitdaUSD']
+        kpi1USD = ['marketCapUSD', 'totalRevenueUSD', 'ebitdaUSD']
 
         main_dic = {}
         for doc in docs:
@@ -309,7 +339,7 @@ def update_country_aggregates():
             df_data = df_data.groupby([category])[i].sum()
             df_data = df_data.reset_index(name = i)
             df_data = df_data.rename(columns={ i: "Sum_" + str(i) })
-
+            #try except created because the first merge will be missing a merged df, while subsequent ones will be fine because merged is available
             try:
                 df_merged_sum = pd.merge(df_merged_sum, df_data, how='left', left_on = category, right_on = category)
             except:
@@ -319,7 +349,16 @@ def update_country_aggregates():
         values = ['grossMargins', 'operatingMargins', 'profitMargins',  'ebitdaMargins', 
                 'returnOnAssets', 'returnOnEquity', 'revenueGrowth', 'earningsGrowth',
                 'currentRatio', 'quickRatio', 'debtToEquity',
-                'heldPercentInsiders', 'heldPercentInstitutions']
+                'heldPercentInsiders', 'heldPercentInstitutions',
+
+                # new ones
+                'forwardPE', 'trailingPE', 'earningsQuarterlyGrowth', 'priceToSalesTrailing12Months',
+                'priceToBook', 'enterpriseToEbitda', 'enterpriseToRevenue',
+                'pegRatio', 'trailingPegRatio',
+                'trailingEps', 'forwardEps', 
+                'trailingAnnualDividendYield', 'trailingAnnualDividendRate', 'fiveYearAvgDividendYield', 'dividendYield', 'dividendRate'
+        ]
+
 
         for j in values:
 
@@ -328,7 +367,7 @@ def update_country_aggregates():
             df_data = df_data.groupby([category])[j].median()
             df_data = df_data.reset_index(name = j)
             df_data = df_data.rename(columns={ j: "Median_" + str(j) })
-
+            #try except created because the first merge will be missing a merged df, while subsequent ones will be fine because merged is available
             try:
                 df_merged_median = pd.merge(df_merged_median, df_data, how='left', left_on = category, right_on = category)
             except:
@@ -414,7 +453,7 @@ def update_country_aggregates():
 def equity_kpi_ranker():
 
     try:
-        
+
         #check if the csv data is up to date, if not need to run equity_kpi_ranker again
         tz_SG = pytz.timezone('Singapore')
         recordtime = datetime.now(tz_SG).strftime("%Y-%m-%d")
@@ -429,12 +468,27 @@ def equity_kpi_ranker():
         values_1 = ['grossMargins', 'operatingMargins', 'profitMargins',  'ebitdaMargins', 
                 'returnOnAssets', 'returnOnEquity', 'revenueGrowth', 'earningsGrowth',
                 'currentRatio', 'quickRatio', 'debtToEquity',
-                'heldPercentInsiders', 'heldPercentInstitutions']
+                'heldPercentInsiders', 'heldPercentInstitutions',
+                # new ones
+                'forwardPE', 'trailingPE', 'earningsQuarterlyGrowth', 'priceToSalesTrailing12Months',
+                'priceToBook', 'enterpriseToEbitda', 'enterpriseToRevenue',
+                'pegRatio', 'trailingPegRatio',
+                'trailingEps', 'forwardEps',
+                'trailingAnnualDividendYield', 'trailingAnnualDividendRate', 'fiveYearAvgDividendYield', 'dividendYield', 'dividendRate'
+                ]
+
 
         ranking_criteria_1 = ['pos','pos','pos','pos',
-                        'pos','pos','pos','pos',
-                        'pos','pos','neg',
-                        'pos','pos']
+                            'pos','pos','pos','pos',
+                            'pos','pos','neg',
+                            'pos','pos',
+                            # new ones
+                            'neg','neg','pos','neg',
+                            'neg','neg','neg',
+                            'neg','neg',
+                            'pos','pos',
+                            'pos','pos','pos','pos','pos'
+                            ]
 
         values_2 = ['marketCapUSD', 'totalRevenueUSD', 'ebitdaUSD']
         ranking_criteria_2 = ['pos','pos','pos']
@@ -445,25 +499,30 @@ def equity_kpi_ranker():
         total_count = len(industry_docs)
         count = 0
         for i in industry_docs:
-
+            
             industry_name = i.id
-
             count = count + 1
             equity_docs = db.collection('equity_daily_kpi').where('industry' , '==' , industry_name).stream()
             for j in equity_docs:
-                
                 # For loading value set 1
                 x = 0
                 for k in values_1:
-                    print (str(count) + "/" + str(total_count) + " " + industry_name, j._data['ticker'],k, ranking_criteria_1[x],  j._data['kpi'][k])
+                    
+                    try:
+                        value = j._data['kpi'][k]
+                    except:
+                        value = None
+
+                    print (str(count) + "/" + str(total_count) + " " + industry_name, j._data['ticker'],k, ranking_criteria_1[x],  value)
                     # append rows to an empty DataFrame
                     df = pd.concat([df, pd.DataFrame.from_records([{ 
                                     'industry' : industry_name, 
                                     'ticker' : j._data['ticker'], 
                                     'kpi' : k, 
                                     'ranking_criteria' : ranking_criteria_1[x], 
-                                    'value' : j._data['kpi'][k]
+                                    'value' : value
                         }])])
+
                     x = x + 1
 
                 # For loading value set 2
@@ -495,6 +554,9 @@ def equity_kpi_ranker():
         for f in filelist:
             os.remove(os.path.join('dataframes/', f))
         df.to_csv('dataframes/'+ recordtime + '.csv')
+
+
+
 
     except AttributeError as e:
         print (e)
@@ -662,7 +724,37 @@ def insert_industry_avg_data():
 
 
 
+##################################################################################################
+################### To create a clean equity_daily_agg database ##################################
+##################################################################################################
+# python -c 'from equity_compute import delele_unwanted; delele_unwanted()'
 
+def delele_unwanted():
+    tz_SG = pytz.timezone('Singapore')
+    collection = "equity_daily_agg"
+
+
+    docs = db.collection(collection).order_by("daily_industry_agg_updated_datetime", direction=firestore.Query.ASCENDING).stream()
+
+    # fieldtodelete1 = 'industry_data.daily_agg.Median_enterpriseToRevenuepegRatio'
+    # fieldtodelete2 = 'industry_data.daily_agg_record_time'
+
+    # db.collection('equity_daily_agg').document(i.id).set(data, merge=True)
+
+    fieldtodelete = 'industry_data'
+
+
+    for doc in docs:
+        key = doc.id
+        print (doc._data['ticker'])
+        recordtime = datetime.now(tz_SG)
+
+        data = {
+            'daily_industry_agg_updated_datetime': recordtime
+        }
+
+        db.collection(collection).document(key).update({fieldtodelete: firestore.DELETE_FIELD})
+        db.collection('equity_daily_agg').document(key).set(data, merge=True)
 
 
 

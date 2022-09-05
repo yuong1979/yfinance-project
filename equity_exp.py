@@ -120,6 +120,10 @@ def exp_equity_daily_kpi_gs():
         'enterpriseToEbitda', 'regularMarketOpen', 'exDividendDate',  'fiftyTwoWeekLow', 'enterpriseToRevenue']
 
 
+
+
+
+
         ## Selected KPIs including usd values 
         kpilistselect2 = [
         'updated_datetime', 'ticker',
@@ -130,11 +134,12 @@ def exp_equity_daily_kpi_gs():
         'trailingEps', 'forwardEps', 
         'pegRatio', 'trailingPegRatio',
         'currentRatio', 'quickRatio', 'debtToEquity', 
-        'bookValue', 'enterpriseValue', 'priceToBook', 
-        'freeCashflow', 'operatingCashflow', 'dividendYield', 'dividendRate', 
+        'bookValue', 'enterpriseValue', 'priceToBook', 'enterpriseToEbitda', 'enterpriseToRevenue',
+        'freeCashflow', 'operatingCashflow', 
         'totalRevenue', 'grossProfits', 'ebitda', 'totalDebt', 'beta',
         'currency', 'financialCurrency',
         'heldPercentInsiders', 'heldPercentInstitutions', 'isEsgPopulated',
+        'dividendYield', 'dividendRate',
         'trailingAnnualDividendYield', 'trailingAnnualDividendRate', 'fiveYearAvgDividendYield', 'lastDividendValue', 'lastDividendDate',
         'targetMedianPrice',  'targetMeanPrice', 'currentPrice',
         'marketCapUSD', 'enterpriseValueUSD', 'freeCashflowUSD', 'operatingCashflowUSD', 'totalDebtUSD',

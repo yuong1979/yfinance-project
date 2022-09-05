@@ -165,10 +165,10 @@ sheet = service.spreadsheets()
 #ASCENDING or #DESCENDING
 def migrate_to_test():
     number_entries = 5
-    migrate_from = 'equity_list'
-    migrate_to = 'equity_calc'
+    migrate_from = 'equity_daily_agg'
+    migrate_to = 'equity_daily_agg_test'
 
-    tickerlist = db.collection(migrate_from).order_by("updated_datetime", direction=firestore.Query.DESCENDING).limit(number_entries).stream()
+    tickerlist = db.collection(migrate_from).order_by("daily_industry_agg_updated_datetime", direction=firestore.Query.DESCENDING).limit(number_entries).stream()
 
     x=1
     for tick in tickerlist:
