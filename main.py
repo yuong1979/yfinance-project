@@ -13,8 +13,8 @@ import inspect
 # from mgt_fin_exp_gs import ext_daily_equity_financials_fb_gs, ext_daily_equity_datetime_fb_gs
 from equity_exp import exp_dataset_datetime_gs, exp_equity_daily_kpi_gs, exp_fx_datetime_gs
 from equity_imp import imp_equity_daily_kpi_fb, imp_equity_financials_fb, imp_equity_price_history_fb
-from equity_compute import update_country_aggregates, update_industry_aggregates, insert_industry_agg_data, insert_industry_avg_data, equity_kpi_ranker
-
+from equity_aggregate import update_country_aggregates, update_industry_aggregates, insert_industry_agg_data
+from equity_ranking import equity_kpi_ranker, insert_industry_rank_data 
 
 
 
@@ -85,7 +85,7 @@ try:
     # runs every two hours - frequency : * */2 * * *
     @app.route("/equity_compute_intensive")
     def run_equity_compute_intensive():
-        insert_industry_avg_data()
+        insert_industry_rank_data()
         insert_industry_agg_data()
         return redirect(url_for("home"))
 
