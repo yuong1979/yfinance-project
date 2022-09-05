@@ -528,7 +528,7 @@ def equity_kpi_ranker():
 def insert_industry_avg_data():
 
     try:
-        #check if the csv data is up to date, if not need to run equity_kpi_ranker_0 again
+        #check if the csv data is up to date, if not need to run equity_kpi_ranker again
         tz_SG = pytz.timezone('Singapore')
         recordtime = datetime.now(tz_SG).strftime("%Y-%m-%d")
         try:
@@ -602,11 +602,9 @@ def insert_industry_avg_data():
 
         tz_SG = pytz.timezone('Singapore')
         
-        # Change this to ranking_updated_datetime after running for the first time
         docs = db.collection('equity_daily_agg').order_by("daily_industry_rank_updated_datetime", direction=firestore.Query.ASCENDING).stream()
 
         count = 0
-        ### replace the below
         for ticker in docs:
 
             recordtime = datetime.now(tz_SG)

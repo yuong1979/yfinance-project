@@ -250,6 +250,24 @@ def view_daily_fx_fb():
 
 
 # #######################################################################################################
+# ############### check yfinance fx is missing data on certain dates ####################################
+# #######################################################################################################
+# python -c 'from fx import check_yfinance_fx; check_yfinance_fx()'
+
+def check_yfinance_fx():
+    start_date_str = "2022-09-01"
+    end_date_str = "2022-09-04"
+    doc = db.collection('fx').stream()
+    for i in doc:        
+        currency = i._data['currency']
+        # IMPORTANT - yfinance extracts one day before instead of exact day - this is import for mgt_fin_exp_fb.py
+        forex_data = yf.download('USD'+ currency +'=X', start = start_date_str, end = end_date_str)
+        print (currency, forex_data)
+
+        
+
+
+# #######################################################################################################
 # ############### Inserting FX into fx daily manually from xe.com instead of yfinance ###################
 # #######################################################################################################
 # python -c 'from fx import manual_inserting_fx; manual_inserting_fx()'
@@ -294,6 +312,7 @@ def manual_inserting_fx():
     print (data)
 
     db.collection(u'fxhistorical').document(hist_input_date).set(data, merge=True)
+
 
 
 

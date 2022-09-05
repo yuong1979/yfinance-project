@@ -58,16 +58,27 @@ fbcredentials = service_account.Credentials.from_service_account_info(firestore_
 db = Client(firebase_database, fbcredentials)
 
 # if the earliest date is not 
-def decide_extraction(time_in_hours, collection, collection_updated_datetime):
+def decide_extraction(target_hours, collection, collection_updated_datetime):
     tz_SG = pytz.timezone('Singapore')
     # time_in_hours = 1
-    time_seconds = 60 * 60 * time_in_hours 
+    # time_seconds = 60 * 60 * time_in_hours 
     latest_entry = db.collection(collection).order_by(collection_updated_datetime, direction=firestore.Query.ASCENDING).limit(1).get()
-    time_diff = datetime.now(tz_SG) - latest_entry[0]._data[collection_updated_datetime]
+    time_passed = datetime.now(tz_SG) - latest_entry[0]._data[collection_updated_datetime]
 
-    if time_diff.seconds < time_seconds:
+    #breaking down and converting the time passed into days and seconds
+    days, seconds = time_passed.days, time_passed.seconds
+    hours_passed = days * 24 + seconds // 3600
+
+    # print (hours_passed)
+    # print (datetime.now(tz_SG), "timenow")
+    # print (latest_entry[0]._data[collection_updated_datetime], "collection last updated datetime")
+
+    if hours_passed < target_hours:
         print ('exiting because the latest entry has been extracted less than 24 hours ago')
         exit()
+    else:
+        print("proceed with extraction, data last extracted ", hours_passed, "hours ago")
+
 
 
 ########################################################################################
