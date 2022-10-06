@@ -4,41 +4,85 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Todo App</title>
+    <title>Updated Tickers</title>
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/semantic-ui@2.4.2/dist/semantic.min.css">
     <script src="https://cdn.jsdelivr.net/npm/semantic-ui@2.4.2/dist/semantic.min.js"></script>
 </head>
 
 <body>
-    <div style="margin-top: 50px;" class="ui container">
-        <h1 class="ui center aligned header">To Do App</h1>
 
-        <form class="ui form" action="/add" method="post">
-            <div class="field">
-                <label>Todo Title</label>
-                <input type="text" name="title" placeholder="Enter Todo..."><br>
-            </div>
-            <button class="ui blue button" type="submit">Add</button>
-        </form>
 
-        <hr>
 
-        {% for todo in todo_list %}
+
+    <div style="margin-top: 50px;" class="ui container split left">
+        <h2> Latest equity daily ticker updated</h2>
+        {% for i in latest_tickerlist %}
         <div class="ui segment">
-            <p class="ui big header">{{todo.id }} | {{ todo.title }}</p>
-
-            {% if todo.complete == False %}
-            <span class="ui gray label">Not Complete</span>
-            {% else %}
-            <span class="ui green label">Completed</span>
-            {% endif %}
-
-            <a class="ui blue button" href="/update/{{ todo.id }}">Update</a>
-            <a class="ui red button" href="/delete/{{ todo.id }}">Delete</a>
+            <p class="ui big header">{{ i._data['updated_datetime'].strftime('%Y-%m-%d   %H:%M') }} / {{ i._data['ticker'] }} / {{ i._data['tickername'] }}</p>
         </div>
         {% endfor %}
     </div>
+
+    <div style="margin-top: 50px;" class="ui container split left">
+        <h2> Earliest equity daily ticker updated</h2>
+        {% for i in earliest_tickerlist %}
+        <div class="ui segment">
+            <p class="ui big header">{{ i._data['updated_datetime'].strftime('%Y-%m-%d   %H:%M') }} / {{ i._data['ticker'] }} / {{ i._data['tickername'] }}</p>
+        </div>
+        {% endfor %}
+    </div>
+
+
+    <div style="margin-top: 50px;" class="ui container split left">
+        <h2> Earliest equity price history updated</h2>
+        {% for i in equity_price_history_list %}
+        <div class="ui segment">
+            <p class="ui big header">{{ i._data['updated_datetime'].strftime('%Y-%m-%d   %H:%M') }} / {{ i._data['ticker'] }} / {{ i._data['tickername'] }}</p>
+        </div>
+        {% endfor %}
+    </div>
+
+
+    <div style="margin-top: 50px;" class="ui container split left">
+        <h2> Earliest financial time series history updated</h2>
+        {% for i in equity_financials_hist_list %}
+        <div class="ui segment">
+            <p class="ui big header">{{ i._data['updated_datetime'].strftime('%Y-%m-%d   %H:%M') }} / {{ i._data['ticker'] }}</p>
+        </div>
+        {% endfor %}
+    </div>
+
+
+
+    <div style="margin-top: 50px;" class="ui container split right">
+        <h2> Latest time currency was updated</h2>
+        {% for i in fxlist %}
+        <div class="ui segment">
+            <p class="ui big header">date updated: {{ i._data['datetime_format'].strftime('%Y-%m-%d   %H:%M') }} / when updated: {{ i._data['updated_datetime'].strftime('%Y-%m-%d   %H:%M') }}</p>
+        </div>
+        {% endfor %}
+    </div>
+
+
+
+
+    <!-- testing purposes only -->
+    <!-- <div style="margin-top: 50px;" class="ui container split left">
+        <h2> Test csv </h2>
+        {% for i in sample_csv_data_list %}
+        <div class="ui segment">
+            <p class="ui big header">{{ i }}</p>
+        </div>
+        {% endfor %}
+    </div> -->
+
+
+
+
+
+
 </body>
 
 </html>
+
