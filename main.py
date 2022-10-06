@@ -79,6 +79,13 @@ try:
         imp_equity_price_history_fb()
         return redirect(url_for("home"))
 
+    # runs every day at 12am - frequency : 1 0 * * *
+    @app.route("/ext_daily_fx_yf_fb")
+    def run_ext_daily_fx_yf_fb():
+        #extracting daily fx for rates to use in kpi calculations
+        ext_daily_fx_yf_fb()
+        return redirect(url_for("home"))
+
 
     # runs every twelve hour - frequency : * */12 * * *
 
@@ -105,6 +112,8 @@ try:
 
 
 
+
+
     #################################################################################
     ############ Below is outdated - exclude from cloud schedule as well ############
     #################################################################################
@@ -116,12 +125,7 @@ try:
     #     return redirect(url_for("home"))
 
 
-    # # runs every day at 12am - frequency : 1 0 * * *
-    # @app.route("/ext_daily_fx_yf_fb")
-    # def run_ext_daily_fx_yf_fb():
-    #     #extracting daily fx for rates to use in kpi calculations
-    #     ext_daily_fx_yf_fb()
-    #     return redirect(url_for("home"))
+
 
     # # runs every day at 12pm - change to running every 12 hours - frequency : 0 */12 * * *
     # @app.route("/exp_fb_gs")
