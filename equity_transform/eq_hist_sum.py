@@ -33,7 +33,7 @@ db = Client(firebase_database, fbcredentials)
 
 
 # #################################################################################################
-# ####### Consolidating all historicals financials ################################################
+# ####### Consolidating all historicals financials - PREREQUISITE #################################
 # #################################################################################################
 # python -c 'from equity_transform.eq_hist_sum import export_eq_hist_sum; export_eq_hist_sum()'
 

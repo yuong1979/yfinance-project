@@ -27,13 +27,13 @@ db = Client(firebase_database, fbcredentials)
 
 ####################################################################################################################################
 ######## Description: Extracting from firebase the daily ratio kpis and ranking / aggregating(median) it and then loading pickle into gcp
-######## This itself has no prerequisite - BUT FILE IS EXTREMELY HUGE
+######## This file has a prerequisite eq_daily_kpi.py
 ####################################################################################################################################
 
 
 
 # #################################################################################################
-# ####### Computing ranking and median all equities ###############################################
+# ####### Computing ranking and median all equities  - PREREQUISITE ###############################
 # #################################################################################################
 # python -c 'from equity_transform.eq_daily_agg import export_eq_daily_agg; export_eq_daily_agg()'
 

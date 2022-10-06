@@ -96,7 +96,7 @@ try:
         # to extract price time series to gcp
         export_eq_hist_price()
 
-        ### with prerequisites
+        ##### with prerequisites #####
         # to extract financials time series - grouped by industry to gcp - prerequisite - export_eq_hist_details()
         export_eq_hist_sum()
         # to extract daily kpi ratios and aggregate them by rank/media and load into gcp - prerequisite - export_eq_daily_kpi()
