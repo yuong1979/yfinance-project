@@ -23,7 +23,7 @@ from equity_transform.eq_daily_kpi import export_eq_daily_kpi
 from equity_transform.eq_hist_details import export_eq_hist_details
 from equity_transform.eq_hist_price import export_eq_hist_price
 from equity_transform.eq_hist_sum import export_eq_hist_sum
-
+from equity_transform.eq_stats import export_eq_dl_stats
 
 
 
@@ -102,12 +102,15 @@ try:
         export_eq_hist_details()
         # to extract price time series to gcp
         export_eq_hist_price()
+        # to extract stats to monitor firebase extract health
+        export_eq_dl_stats()
 
         ##### with prerequisites #####
         # to extract financials time series - grouped by industry to gcp - prerequisite - export_eq_hist_details()
         export_eq_hist_sum()
         # to extract daily kpi ratios and aggregate them by rank/media and load into gcp - prerequisite - export_eq_daily_kpi()
         export_eq_daily_agg()
+
         return redirect(url_for("home"))
 
 

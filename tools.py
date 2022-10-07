@@ -26,24 +26,42 @@ service = build('sheets', 'v4', credentials=gscredentials)
 sheet = service.spreadsheets()
 
 
-
+firestore_api_key = access_secret(firestore_api_key, project_id)
+firestore_api_key_dict = json.loads(firestore_api_key)
+fbcredentials = service_account.Credentials.from_service_account_info(firestore_api_key_dict)
+db = Client(firebase_database, fbcredentials)
 
 
 
 
 # python -c 'from tools import testing; testing()'
 
+
+
 def testing():
 
-
-    date_mapping = date_mapper()
-
-    df_test = pd.read_pickle('data/eq_hist_details.pickle')
+    print ('test')
 
 
-    print (df_test)
-    print (df_test.dtypes)
-    print (df_test.columns)
+
+
+
+
+
+
+
+
+
+
+
+    # date_mapping = date_mapper()
+
+    # df_test = pd.read_pickle('data/eq_hist_details.pickle')
+
+
+    # print (df_test)
+    # print (df_test.dtypes)
+    # print (df_test.columns)
 
 
 
