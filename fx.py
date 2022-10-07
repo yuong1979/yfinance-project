@@ -33,6 +33,72 @@ firestore_api_key_dict = json.loads(firestore_api_key)
 fbcredentials = service_account.Credentials.from_service_account_info(firestore_api_key_dict)
 db = Client(firebase_database, fbcredentials)
 
+
+
+# #######################################################################################################
+# ############### Daily updates of the historical FX ####################################################
+# #######################################################################################################
+# python -c 'from fx import ext_daily_fx_yf_fb; ext_daily_fx_yf_fb()'
+
+
+def ext_daily_fx_yf_fb():
+
+    try:
+
+        tz_SG = pytz.timezone('Singapore')
+        end_date = datetime.now(tz_SG)
+        # extracting the last three days in case the last 3 days fx was updated
+        start_date = end_date - timedelta(days=15)
+        start_date_str = start_date.strftime("%Y-%m-%d")
+        end_date_str = end_date.strftime("%Y-%m-%d")
+
+        print (start_date_str)
+        print (end_date_str)
+
+        doc = db.collection('fx').stream()
+
+        for i in doc:
+            
+            currency = i._data['currency']
+            # IMPORTANT - yfinance extracts one day before instead of exact day - this is import for mgt_fin_exp_fb.py
+            forex_data = yf.download('USD'+ currency +'=X', start = start_date_str, end = end_date_str)
+            # test = forex_data.index = pd.to_datetime(forex_data.index)
+            extracted_fx = forex_data['Adj Close']
+            print (extracted_fx)
+
+            for idate, rate in extracted_fx.items():
+                #convert into str formet that excludes date so the document can be searched
+                idate = idate.replace(hour=8, minute=0)
+                hist_datetime = datetime.combine(idate, datetime.min.time())
+                hist_input_date = idate.strftime("%Y-%m-%d")
+                print (i._data['currency'])
+                currencyrates = {
+                    currency : rate,
+                    #usd does not exist in fx so it has to be added separately
+                    'USD': 1
+                }
+                data = {
+                    "currencyrates" : currencyrates,
+                    "datetime_format" : hist_datetime,
+                    "created_datetime": firestore.SERVER_TIMESTAMP,
+                    "updated_datetime" : firestore.SERVER_TIMESTAMP
+                        }
+                #inserting the data into fx historical
+                db.collection(u'fxhistorical').document(hist_input_date).set(data, merge=True)
+
+
+    except Exception as e:
+        print (e)
+        file_name = __name__
+        function_name = inspect.currentframe().f_code.co_name
+        subject = "Error on macrokpi project"
+        content = "Error in \n File name: " + str(file_name) + "\n Function: " + str(function_name) + "\n Detailed error: " + str(e)
+        error_email(subject, content)
+
+
+
+
+
 # upload fx to firebase
 fx_list = [
     "CNY","INR","CAD","USD","ARS","EUR","KRW","HKD","AUD",
@@ -41,6 +107,19 @@ fx_list = [
     "MYR","TRY","THB","PEN","DKK","NGN","HUF","COP","PHP",
     "GBP","ILA","ISK"
 ]
+
+########################################################################################################
+####### Adding to the currency list (fx) - this is prerequisite of daily fx historical update ##########
+########################################################################################################
+# python -c 'from fx import update_fx_collection; update_fx_collection()'
+def update_fx_collection():
+    #adding any additional new currency in the above list(just add to the list any new ones) and run the below
+    for i in fx_list:
+        if not db.collection('fx').where("currency", "==", i).get():
+            data={'currency': i, 'rate': 0, 'activated': True}
+            db.collection('fx').add(data)
+
+
 
 
 
@@ -174,65 +253,6 @@ def extract_hist_fx_fb():
 
 
 
-# #######################################################################################################
-# ############### Daily updates of the historical FX ####################################################
-# #######################################################################################################
-# python -c 'from fx import ext_daily_fx_yf_fb; ext_daily_fx_yf_fb()'
-
-
-def ext_daily_fx_yf_fb():
-
-    try:
-
-        tz_SG = pytz.timezone('Singapore')
-        end_date = datetime.now(tz_SG)
-        # extracting the last three days in case the last 3 days fx was updated
-        start_date = end_date - timedelta(days=15)
-        start_date_str = start_date.strftime("%Y-%m-%d")
-        end_date_str = end_date.strftime("%Y-%m-%d")
-
-        print (start_date_str)
-        print (end_date_str)
-
-        doc = db.collection('fx').stream()
-
-        for i in doc:
-            
-            currency = i._data['currency']
-            # IMPORTANT - yfinance extracts one day before instead of exact day - this is import for mgt_fin_exp_fb.py
-            forex_data = yf.download('USD'+ currency +'=X', start = start_date_str, end = end_date_str)
-            # test = forex_data.index = pd.to_datetime(forex_data.index)
-            extracted_fx = forex_data['Adj Close']
-            print (extracted_fx)
-
-            for idate, rate in extracted_fx.items():
-                #convert into str formet that excludes date so the document can be searched
-                idate = idate.replace(hour=8, minute=0)
-                hist_datetime = datetime.combine(idate, datetime.min.time())
-                hist_input_date = idate.strftime("%Y-%m-%d")
-                print (i._data['currency'])
-                currencyrates = {
-                    currency : rate,
-                    #usd does not exist in fx so it has to be added separately
-                    'USD': 1
-                }
-                data = {
-                    "currencyrates" : currencyrates,
-                    "datetime_format" : hist_datetime,
-                    "created_datetime": firestore.SERVER_TIMESTAMP,
-                    "updated_datetime" : firestore.SERVER_TIMESTAMP
-                        }
-                #inserting the data into fx historical
-                db.collection(u'fxhistorical').document(hist_input_date).set(data, merge=True)
-
-
-    except Exception as e:
-        print (e)
-        file_name = __name__
-        function_name = inspect.currentframe().f_code.co_name
-        subject = "Error on macrokpi project"
-        content = "Error in \n File name: " + str(file_name) + "\n Function: " + str(function_name) + "\n Detailed error: " + str(e)
-        error_email(subject, content)
 
 
 # #######################################################################################################
@@ -383,17 +403,6 @@ def manual_inserting_fx():
 
 
 
-
-########################################################################################################
-########################### Adding to the currency list ################################################
-########################################################################################################
-
-
-# #adding any additional new currency in the above list(just add to the list any new ones) and run the below
-# for i in fx_list:
-#     if not db.collection('fx').where("currency", "==", i).get():
-#         data={'currency': i, 'rate': 0, 'activated': True}
-#         db.collection('fx').add(data)
 
 
 
